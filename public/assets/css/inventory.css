@@ -1,0 +1,214 @@
+/* assets/css/inventory.css */
+
+/* --- Inherited Variables (from global.css) --- */
+/* :root { ... } */
+
+
+/* --- Inventory Layout (2-Column Push) --- */
+.inventory-layout {
+    display: flex;
+    height: 100%; /* Fill the .app-content area */
+}
+
+.inventory-main-content {
+    flex-grow: 1; /* Takes up available space */
+    /* padding-right: 20px; */ /* Add space if needed when panel is open */
+    overflow-y: auto; /* Allow content to scroll */
+    transition: flex-basis 0.3s ease-in-out;
+    flex-basis: 100%; /* Default: takes full width */
+}
+
+.inventory-detail-panel {
+    flex-basis: 350px; /* Width of the panel */
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-color-light);
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background-color: #fff;
+    display: none; /* Hide by default */
+}
+
+/* State when Detail Panel is Active */
+.inventory-layout.detail-active .inventory-main-content {
+    flex-basis: calc(100% - 370px); /* Shrink main content */
+}
+
+.inventory-layout.detail-active .inventory-detail-panel {
+    display: block; /* Show the panel */
+}
+
+
+/* --- Inventory Page Header --- */
+.inventory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color-light);
+    position: sticky; /* Stick header */
+    top: 0;
+    background-color: var(--bg-color-app);
+    z-index: 50;
+}
+
+.inventory-header h1 {
+    margin: 0;
+    font-size: 1.8em;
+}
+
+.inventory-search {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color-light);
+    border-radius: 20px; /* Rounded search */
+    width: 300px;
+    font-size: 0.9em;
+}
+
+/* --- Item Sections --- */
+.item-section {
+    margin-bottom: 25px;
+}
+
+.item-section h2.category-header { /* Target specific header class */
+    background-color: var(--bg-color-sidebar);
+    color: var(--font-color-sidebar);
+    padding: 10px 15px;
+    margin: 0 0 15px 0;
+    /* cursor: pointer; */ /* Remove cursor if not collapsible */
+    font-size: 1.3em;
+    border-radius: 5px;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+/* Optional: Keep collapse indicator styles if using collapse */
+/* .item-section h2.category-header::after { ... } */
+/* .item-section h2.category-header.collapsed::after { ... } */
+
+/* --- Item Grid --- */
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+/* Optional: Hide grid if using collapse */
+/* .item-section h2.category-header.collapsed + .item-grid { display: none; } */
+
+
+/* --- Item Card (Grid Item) --- */
+.item-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.07);
+    text-align: center;
+    padding: 15px;
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+    cursor: pointer; /* Indicate clickable */
+}
+.item-card.selected {
+     box-shadow: 0 0 0 3px var(--primary-color);
+     transform: none;
+}
+.item-card.selected:hover { transform: none; }
+.item-card:not(.selected):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.item-card img {
+    max-width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 10px;
+}
+
+.item-card h4 {
+    font-size: 1em;
+    margin: 0 0 10px 0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- Quantity Inputs --- */
+.item-quantity-controls {
+    font-size: 0.85em;
+    color: #555;
+    display: grid;
+    grid-template-columns: auto 1fr; /* Label | Input */
+    gap: 5px 8px;
+    align-items: center;
+    margin-top: 10px;
+}
+.item-quantity-controls label {
+    text-align: right;
+}
+.item-quantity-controls input[type="number"] {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid var(--border-color-light);
+    border-radius: 3px;
+    font-size: 0.9em;
+    box-sizing: border-box;
+    text-align: center;
+}
+/* Remove spinner arrows */
+.item-quantity-controls input[type=number]::-webkit-inner-spin-button,
+.item-quantity-controls input[type=number]::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+.item-quantity-controls input[type=number] { -moz-appearance: textfield; }
+
+.item-quantity-controls input[disabled] {
+    background-color: #f8f8f8;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* --- Detail Panel Specific Styles --- */
+.inventory-detail-panel .hidden { display: none; }
+#detail-panel-placeholder { color: #999; text-align: center; margin-top: 50px; }
+.close-detail-panel { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.8em; color: #aaa; cursor: pointer; padding: 0; line-height: 1; }
+.close-detail-panel:hover { color: #555; }
+.inventory-detail-panel .detail-header { margin-bottom: 15px; padding-right: 25px; }
+.inventory-detail-panel .detail-header h2 { margin: 0; font-size: 1.6em; }
+.inventory-detail-panel .detail-header span { font-size: 0.9em; color: #888; }
+.detail-item-image { display: block; max-width: 150px; height: 150px; object-fit: contain; margin: 15px auto; background-color: #f8f8f8; border-radius: 5px; border: 1px solid var(--border-color-light); }
+#detail-description { font-size: 0.95em; color: #555; line-height: 1.5; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color-light); }
+.detail-quantity { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+.detail-quantity label { font-weight: 500; }
+.detail-quantity input { width: 70px; padding: 6px 8px; text-align: center; border: 1px solid var(--border-color-light); border-radius: 4px; }
+
+/* --- Usage Info Section --- */
+.detail-usage-section { margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border-color-light); }
+.detail-usage-section h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.1em; color: #444; }
+#detail-usage-list { list-style: none; padding: 0; margin: 0; font-size: 0.9em; }
+#detail-usage-list li { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+#detail-usage-list img { width: 24px; height: 24px; object-fit: contain; background-color: #f0f0f0; border-radius: 3px; }
+#detail-usage-list .usage-qty { font-weight: 500; color: #666; margin-left: auto; /* Push qty to the right */ padding-left: 10px; }
+#detail-usage-none { color: #888; font-style: italic; font-size: 0.9em; }
+#detail-usage-none.hidden { display: none; } /* Ensure hidden class works */
+
+/* --- Saving/Error styles --- */
+.item-quantity-input.saving,
+#detail-qty-input.saving {
+    opacity: 0.6;
+    box-shadow: 0 0 5px orange;
+    transition: opacity 0.2s ease, box-shadow 0.2s ease;
+}
+.item-quantity-input.save-success,
+#detail-qty-input.save-success {
+    animation: flash-green-input 1s ease-out; /* Use input-specific animation */
+}
+.item-quantity-input.save-error,
+#detail-qty-input.save-error {
+    animation: flash-red-input 1s ease-out; /* Use input-specific animation */
+}
+
+/* Define input-specific animations if not already in global.css */
+@keyframes flash-green-input { 0% { background-color: rgba(76, 175, 80, 0.2); } 100% { background-color: transparent; } }
+@keyframes flash-red-input { 0% { background-color: rgba(211, 47, 47, 0.2); } 100% { background-color: transparent; } }

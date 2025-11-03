@@ -1,0 +1,502 @@
+/* --- Basic Setup & Variables --- */
+:root {
+    --primary-color: #4CAF50;
+    --accent-color-info: lightblue;
+    --accent-color-add: lightgreen;
+    --accent-color-warn: #ff9800;
+    --accent-color-danger: #D32F2F;
+    --font-color-light: white;
+    --font-color-dark: #333;
+    --border-color: #ccc;
+    --border-color-light: #e0e0e0;
+    --bg-color-light: #f0f0f0;
+    --bg-color-medium: #f9f9f9;
+    --bg-color-disabled: #fafafa;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+body { margin: 0; font-family: sans-serif; color: #333; }
+
+/* --- Three-Panel Layout --- */
+.app-layout { display: grid; grid-template-columns: 280px 1fr 350px; height: 100vh; width: 100%; }
+.left-panel, .main-content, .right-panel { padding: 20px; box-sizing: border-box; overflow-y: auto; }
+.left-panel { border-right: 1px solid var(--border-color-light); display: flex; flex-direction: column; }
+.main-content { background-color: var(--bg-color-medium); }
+.right-panel { border-left: 1px solid var(--border-color-light); }
+.panel-header, .content-header { margin-bottom: 20px; }
+h1 { font-size: 1.5em; margin: 0; }
+
+/* --- Left Panel Styles --- */
+.search-container { width: 100%; margin-bottom: 15px; }
+#search { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 4px; }
+.filter-controls { margin-bottom: 20px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 15px 0; }
+#filter-options div { margin-bottom: 8px; }
+#clear-filters-btn { margin-top: 15px; width: 100%; padding: 8px; border: 1px solid var(--border-color); background-color: var(--bg-color-light); cursor: pointer; border-radius: 4px; }
+.panel-nav { flex-grow: 1; overflow-y: auto; }
+.rarity-list { list-style: none; padding: 0; margin: 0; }
+.rarity-list a { display: block; padding: 10px 15px; text-decoration: none; color: var(--font-color-dark); border-radius: 5px; margin: 2px 0; }
+.rarity-list a:hover { background-color: var(--bg-color-light); }
+.rarity-list a.active { background-color: var(--primary-color); color: var(--font-color-light); font-weight: bold; }
+
+/* --- Content Header & View Controls (Corrected) --- */
+.content-header {
+    border-bottom: 1px solid var(--border-color-light);
+    padding-bottom: 15px;
+}
+.content-header h1 {
+    margin: 0;
+}
+
+.view-controls {
+    display: flex;
+    justify-content: flex-end; /* <-- MODIFIED */
+    align-items: center;
+    gap: 15px; /* <-- ADDED */
+    margin-bottom: 20px;
+}
+
+.view-toggle .view-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color-light);
+    cursor: pointer;
+}
+.view-toggle .view-btn.active {
+    background-color: var(--primary-color);
+    color: var(--font-color-light);
+    border-color: var(--primary-color);
+}
+.view-toggle .view-btn:first-child { border-radius: 4px 0 0 4px; }
+.view-toggle .view-btn:last-child { border-radius: 0 4px 4px 0; border-left: none; }
+
+
+/* --- List Quick Edit Toggle --- */
+#list-quick-edit-container {
+    padding: 8px 12px;
+    background-color: #fffbe6;
+    border: 1px solid #ffe58f;
+    border-radius: 4px;
+    display: none; 
+}
+#list-quick-edit-container label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+/* --- Main Content Grid --- */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+.grid-item { 
+    border-radius: 10px; 
+    box-shadow: 0 4px 8px var(--shadow-color); 
+    text-align: center; 
+    padding: 15px; 
+    position: relative; 
+    background-color: var(--font-color-light); 
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.grid-item.selected { box-shadow: 0 0 0 3px var(--primary-color); }
+.grid-item.hidden { display: none; }
+.grid-item img { max-width: 100%; height: 120px; object-fit: contain; }
+.grid-item h4 { font-size: 1.1em; margin: 5px 0; }
+.grid-item .levels.missing {
+    display: none;
+}
+.grid-item img.missing {
+    filter: grayscale(80%);
+    opacity: 0.4;
+}
+.grid-item h4.missing {
+    color: #aaa;
+}
+.info-button { position: absolute; top: 5px; right: 5px; background-color: var(--accent-color-info); color: var(--font-color-light); border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 1em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.plus-button { position: absolute; top: 34px; right: 5px; background-color: var(--accent-color-add); color: var(--font-color-light); border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 1em; cursor: pointer; }
+.plus-button.missing { display: none; }
+.stack-top { --d: 5px; --w: 100px; --c: var(--accent-color-warn); position: absolute; top: 0; left: 0; transform: translate(-29.29%, -100%) rotate(-45deg); color: var(--font-color-light); text-align: center; width: var(--w); transform-origin: bottom right; padding: 5px 0 calc(var(--d) + 5px); background: linear-gradient(rgba(0,0,0,0.6) 0 0) bottom/100% var(--d) no-repeat var(--c); clip-path: polygon(0 100%, 0 calc(100% - var(--d)), 50% calc(100% - var(--d) - var(--w)/2), 100% calc(100% - var(--d)), 100% 100%, calc(100% - var(--d)) calc(100% - var(--d)), var(--d) calc(100% - var(--d))); }
+.levels { font-size: 0.9em; color: #555; }
+.level-input, .plus-level-input { width: 50px; text-align: center; border: 1px solid var(--border-color); border-radius: 3px; }
+
+/* --- NEW GRID ITEM IMPROVEMENTS --- */
+.grid-item:not(.selected):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px var(--shadow-color);
+}
+.card-levels-grid {
+    display: grid;
+    grid-template-columns: 1fr auto; 
+    gap: 4px 8px;
+    align-items: center;
+    margin-bottom: 12px; 
+    padding: 0 10px; 
+}
+.card-levels-grid label {
+    text-align: right;
+    font-size: 0.85em;
+    color: #555;
+}
+.card-levels-grid input {
+    padding: 2px;
+}
+.card-forms {
+    padding: 0 5px;
+}
+
+/* --- Main Content List View --- */
+.list-view-container {
+    width: 100%;
+    border: 1px solid var(--border-color-light);
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color-light);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.list-item:last-child {
+    border-bottom: none;
+}
+.list-item:hover {
+    background-color: var(--bg-color-medium);
+}
+
+.list-item.selected {
+    background-color: #e6f4e7; 
+    box-shadow: inset 3px 0 0 0 var(--primary-color);
+}
+.list-item.hidden {
+    display: none;
+}
+
+/* --- List Item Column Sizing --- */
+.cat-name-column {
+    flex: 1; 
+    display: flex;
+    align-items: center;
+    font-size: 1.1em;
+    font-weight: 500;
+}
+.cat-name-column img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    margin-right: 15px;
+    border-radius: 4px;
+    background-color: var(--bg-color-light);
+}
+
+.level-column {
+    flex: 0 0 180px; 
+    display: flex;
+    gap: 10px;
+}
+.level-column label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9em;
+}
+.level-column input {
+    width: 45px; 
+}
+
+.form-column {
+    flex: 0 0 200px; 
+}
+.form-column .form-button-group {
+    margin-top: 0; 
+}
+
+.add-column {
+    flex: 0 0 50px; 
+    text-align: right;
+}
+.list-add-button {
+    background-color: var(--accent-color-add);
+    color: var(--font-color-dark);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 28px;
+}
+.list-add-button:hover {
+    background-color: #81c784;
+}
+
+/* --- List Item Missing/Owned States --- */
+.list-item.missing .cat-name-column {
+    opacity: 0.5;
+}
+.list-item.missing .cat-name-column span {
+    color: #888;
+}
+
+/* --- Bulk Select Checkbox Column --- */
+.select-column {
+    flex: 0 0 40px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none; /* <-- MODIFIED: Hide by default */
+}
+#list-select-all-container {
+    padding: 8px 12px;
+    display: none; /* <-- MODIFIED: Hide by default */
+}
+#list-select-all-container label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+/* --- Bulk Action Bar --- */
+#bulk-action-bar {
+    position: sticky;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    background-color: var(--font-color-dark);
+    color: var(--font-color-light);
+    border-radius: 8px;
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+    /* transform and transition removed */
+    z-index: 100;
+}
+#bulk-action-bar.hidden {
+    display: none;
+}
+#bulk-action-bar:not(.hidden) {
+    display: block; /* Or flex if needed */
+}
+
+/* Styles for content inside the bar remain the same */
+.bulk-action-bar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+#bulk-select-count {
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+.bulk-action-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.bulk-action-inputs label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9em;
+}
+.bulk-action-inputs input {
+    width: 50px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 4px;
+}
+.bulk-action-inputs button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--accent-color-warn);
+    color: var(--font-color-dark);
+    cursor: pointer;
+    font-weight: bold;
+}
+.bulk-action-buttons button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: var(--font-color-light);
+    cursor: pointer;
+    margin-left: 10px;
+    font-weight: bold;
+}
+.bulk-action-buttons #bulk-deselect-btn {
+    background-color: var(--accent-color-warn);
+    color: var(--font-color-dark);
+}
+
+/* --- List Quick Edit Logic --- */
+.list-item.missing .level-column,
+.list-item.missing .form-column {
+    display: none;
+}
+.list-item .add-column {
+    display: none; 
+}
+
+/* When the body has .quick-edit-list-active... */
+body.quick-edit-list-active .list-item.missing .level-column,
+body.quick-edit-list-active .list-item.missing .form-column {
+    display: none; 
+}
+body.quick-edit-list-active .list-item.missing .add-column {
+    display: block; 
+}
+/* --- NEW: Show select columns only in quick edit --- */
+body.quick-edit-list-active .select-column {
+    display: flex;
+}
+body.quick-edit-list-active #list-select-all-container {
+    display: block;
+}
+
+/* --- Right Panel Detail Styles --- */
+.right-panel .hidden { display: none; }
+.right-panel p { margin: 5px 0; color: #666; }
+#detail-panel-placeholder { color: #999; text-align: center; margin-top: 50px; }
+.detail-header { margin-bottom: 15px; }
+.detail-header h2 { margin: 0; font-size: 1.8em; }
+.detail-header span { font-size: 0.9em; color: #888; }
+.right-panel .levels { margin-bottom: 20px; }
+.right-panel .levels label { display: inline-block; margin-right: 15px; }
+.detail-panel-form { background-color: var(--bg-color-medium); border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 5px solid transparent; transition: border-color 0.3s ease; }
+.detail-panel-form.achieved { border-left-color: var(--primary-color); background-color: #e8f5e9; }
+.detail-panel-form.available { border-left-color: var(--accent-color-warn); /* Orange/Yellow */ }
+.detail-panel-form.locked { border-left-color: var(--accent-color-danger); /* Red */ opacity: 0.7; /* Slightly fade locked forms */ }
+.detail-panel-form h3 { margin-top: 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.1em; }
+.detail-panel-form .form-level-req { font-size: 0.8em; font-weight: normal; color: #888; }
+.detail-form-image { display: block; margin: 10px auto; margin-top: -30px; width: 60%; height: auto; }
+.evolution-requirements { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ddd; font-size: 0.9em; }
+.evolution-requirements div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.evolution-requirements .req-label { font-weight: bold; }
+.evolution-requirements .req-value.not-met { color: var(--accent-color-danger); font-weight: bold; }
+.evolution-requirements-list { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.evolution-requirements-list img { width: 32px; height: 32px; }
+.evolution-requirements-list span { font-size: 0.8em; color: #666; }
+#detail-remove-btn { width: 100%; padding: 10px; font-size: 1em; margin-top: 20px; background-color: var(--accent-color-danger); color: var(--font-color-light); border: none; border-radius: 4px; cursor: pointer; }
+
+/* --- Form Buttons & Tooltips --- */
+.form-button-group { display: flex; width: 100%; margin-top: 8px; }
+.form-button { flex-grow: 1; padding: 6px 4px; border: 1px solid var(--border-color); background-color: var(--bg-color-light); cursor: pointer; font-size: 12px; text-align: center; }
+.form-button:first-child { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+.form-button:last-child { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+.form-button:not(:last-child) { border-right: none; }
+.form-button:not([disabled]):hover { background-color: #e0e0e0; }
+.form-button.active { background-color: var(--primary-color); color: var(--font-color-light); font-weight: bold; }
+.form-button[disabled] { background-color: var(--bg-color-disabled); color: var(--border-color); cursor: not-allowed; }
+.custom-tooltip { position: fixed; background-color: var(--font-color-dark); color: var(--font-color-light); padding: 6px 10px; border-radius: 4px; font-size: 12px; z-index: 1001; pointer-events: none; transform: translate(-50%, -100%) translateY(-8px); opacity: 0; transition: opacity 0.2s, transform 0.2s; }
+.custom-tooltip.visible { opacity: 1; transform: translate(-50%, -100%) translateY(-12px); }
+.greenglow, .redglow { filter: drop-shadow(2px 0px 0px var(--glow-color)) drop-shadow(-2px 0px 0px var(--glow-color)) drop-shadow(0px 2px 0px var(--glow-color)) drop-shadow(0px -2px 0px var(--glow-color)); }
+.greenglow { --glow-color: rgb(0, 255, 0); }
+.redglow { --glow-color: rgb(255, 0, 0); }
+.error-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: var(--accent-color-danger); color: var(--font-color-light); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); z-index: 1000; }
+
+/* Style for when an element is in the process of saving */
+.saving {
+    opacity: 0.5;
+    pointer-events: none; /* Prevents clicking again while saving */
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* A green flash for a successful save */
+.save-success {
+    animation: flash-green 1s ease-out;
+}
+
+/* A red flash for a failed save */
+.save-error {
+    animation: flash-red 1s ease-out;
+}
+
+@keyframes flash-green {
+    0% { background-color: rgba(46, 204, 113, 0.5); }
+    100% { background-color: transparent; }
+}
+
+@keyframes flash-red {
+    0% { background-color: rgba(231, 76, 60, 0.5); }
+    100% { background-color: transparent; }
+}
+
+/* --- Card Action Button --- */
+.card-action-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background-color: var(--primary-color);
+    color: var(--font-color-light);
+    border-radius: 50%;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 28px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Show button on hover (for desktop) */
+.grid-item:not(.owned):hover .card-action-button {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+/* For devices that don't support hover (mobiles), make the button always visible on unowned cards. */
+@media (hover: none) {
+    .grid-item:not(.owned) .card-action-button {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
+    }
+}
+
+/* --- Sort Controls --- */
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 15px; /* Add some space before quick edit toggle */
+}
+.sort-controls label {
+    font-size: 0.9em;
+    color: #555;
+}
+#sort-select {
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: #fff;
+    font-size: 0.9em;
+}
+#sort-direction-btn {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-color-light);
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: bold;
+    min-width: 45px; /* Ensure consistent width */
+    text-align: center;
+}
+#sort-direction-btn:hover {
+    background-color: #e0e0e0;
+}

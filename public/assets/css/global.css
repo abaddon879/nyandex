@@ -1,0 +1,350 @@
+/* assets/css/global.css */
+
+/* --- Basic Setup & Variables --- */
+:root {
+    --primary-color: #4CAF50;
+    --font-color-light: white;
+    --font-color-dark: #333;
+    --border-color: #ccc; /* Added missing variable */
+    --border-color-light: #e0e0e0;
+    --bg-color-app: #f4f7f6;
+    --bg-color-header: #ffffff;
+    --bg-color-sidebar: #2c3e50;
+    --bg-color-sidebar-hover: #34495e;
+    --font-color-sidebar: #ecf0f1;
+    --bg-color-light: #f0f0f0; /* Added missing variable */
+    --accent-color-danger: #D32F2F; /* Added missing variable */
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color-app);
+    color: var(--font-color-dark);
+    /* Prevent body scrolling when app shell is active */
+    overflow: hidden;
+}
+
+a { color: var(--primary-color); }
+
+/* --- Global Header (Top Bar - Always 60px height) --- */
+.global-header {
+    position: fixed; /* Keep header fixed at the top */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px; /* Fixed height */
+    z-index: 100; /* Ensure it's above other content */
+    box-sizing: border-box; /* Include padding in width */
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 25px;
+    background-color: var(--bg-color-header);
+    border-bottom: 1px solid var(--border-color-light);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.global-header .brand {
+    font-size: 1.4em;
+    font-weight: bold;
+    text-decoration: none;
+    color: var(--primary-color);
+}
+.global-header .user-nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.global-header .user-nav a {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+}
+.global-header .user-nav a:hover {
+    color: #000;
+}
+
+
+/* --- Master Layout: App Shell (For Logged-In Users) --- */
+.app-shell {
+    display: grid;
+    /* Columns: Sidebar (fixed width), Content (takes rest) */
+    grid-template-columns: 220px 1fr;
+    /* Rows: Only one row now, taking full height */
+    grid-template-rows: 1fr;
+    grid-template-areas:
+        "sidebar content"; /* Simpler areas */
+
+    height: calc(100vh - 60px); /* Height calculation takes header into account */
+    margin-top: 60px; /* Position below the fixed header */
+    width: 100%;
+    overflow: hidden; /* Prevent shell scrolling */
+}
+
+/* --- App Sidebar (Left Nav) --- */
+.app-sidebar {
+    grid-area: sidebar;
+    background-color: var(--bg-color-sidebar);
+    color: var(--font-color-sidebar);
+    padding: 20px 0;
+    overflow-y: auto; /* Allow sidebar to scroll */
+    height: 100%; /* Make sidebar fill the grid row height */
+}
+.app-sidebar nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.app-sidebar nav li a {
+    display: block;
+    padding: 15px 25px;
+    text-decoration: none;
+    color: var(--font-color-sidebar);
+    font-weight: 500;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
+.app-sidebar nav li a:hover {
+    background-color: var(--bg-color-sidebar-hover);
+}
+.app-sidebar nav li a.active {
+    background-color: var(--bg-color-sidebar-hover);
+    border-left-color: var(--primary-color);
+    font-weight: bold;
+}
+
+
+/* --- Main Content Area --- */
+.app-content {
+    grid-area: content;
+    overflow: auto; /* Allow content area to scroll */
+    height: 100%; /* Make content fill the grid row height */
+    padding: 25px;
+    box-sizing: border-box;
+    background-color: var(--bg-color-app);
+}
+
+/* Container for simple pages inside app-content */
+.main-container {
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+
+/* --- Auth Layout (for Login/Register) --- */
+.auth-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    margin-top: 60px;
+    padding: 40px 20px;
+    box-sizing: border-box;
+    /* Mockup background: Soft gradient */
+    background: linear-gradient(135deg, #e8f5e9, #f0f4f8);
+}
+/* Re-enable scrolling ONLY for auth pages */
+body:has(.auth-layout) {
+    overflow: auto;
+}
+
+/* --- Auth Form Card --- */
+.auth-form {
+    max-width: 450px;
+    width: 100%;
+    padding: 40px 50px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e8e8e8;
+    text-align: center;
+}
+
+/* Form Title */
+.auth-form h1 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 35px;
+    color: var(--font-color-dark);
+    font-size: 2em;
+    font-weight: 600;
+}
+
+/* Input Group (for icon positioning) */
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group i { /* Font Awesome icon style */
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #bbb;
+    font-size: 1em;
+    pointer-events: none;
+}
+
+/* Input Fields */
+.auth-form input[type="text"],
+.auth-form input[type="email"],
+.auth-form input[type="password"] {
+    width: 100%;
+    padding: 14px 20px 14px 50px; /* Padding for icon + rounded look */
+    box-sizing: border-box;
+    border: 1px solid #dcdcdc;
+    border-radius: 25px; /* Fully rounded */
+    font-size: 1em;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: #fcfcfc;
+}
+.auth-form input::placeholder {
+    color: #bbb;
+}
+
+.auth-form input[type="text"]:focus,
+.auth-form input[type="email"]:focus,
+.auth-form input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+    background-color: #fff;
+}
+
+/* Submit Button in Auth Form - Inherits from .btn, adds margin */
+.auth-form button {
+    margin-top: 10px;
+    /* All other styles come from adding .btn .btn-primary .btn-lg .btn-block in HTML */
+}
+
+
+/* Bottom Links in Auth Form */
+.auth-links {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 0.9em;
+    color: #555;
+}
+.auth-links a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+/* Error Message Styling in Auth Form */
+.auth-form .error-message,
+.auth-form ul.error-list {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+    padding: 12px 18px;
+    border-radius: 5px;
+    margin-bottom: 25px; /* Show errors above form inputs */
+    font-size: 0.9em;
+    text-align: left; /* Align error text left */
+}
+.auth-form ul.error-list {
+    padding-left: 35px;
+}
+.auth-form ul.error-list li {
+    margin-bottom: 6px;
+}
+
+
+/* --- Global Button Styles --- */
+.btn {
+    /* Basic Structure & Font */
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px; /* Fully rounded */
+    font-size: 1em;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* Primary Button Style (Green Gradient) */
+.btn-primary {
+    background: linear-gradient(90deg, #4CAF50, #81C784);
+    color: var(--font-color-light);
+    box-shadow: 0 4px 10px rgba(76, 175, 80, 0.2);
+}
+.btn-primary:hover {
+    background: linear-gradient(90deg, #45a049, #73b376);
+    box-shadow: 0 6px 15px rgba(76, 175, 80, 0.3);
+    transform: translateY(-2px);
+}
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(76, 175, 80, 0.2);
+}
+
+/* Secondary/Default Button Style (Light Grey) */
+.btn-secondary {
+    background-color: var(--bg-color-light, #f0f0f0);
+    color: var(--font-color-dark, #333);
+    border: 1px solid var(--border-color-light, #e0e0e0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.btn-secondary:hover {
+    background-color: #e6e6e6;
+    border-color: #dcdcdc;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+}
+.btn-secondary:active {
+     transform: translateY(0);
+     background-color: #dcdcdc;
+     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Danger Button Style (Red) */
+.btn-danger {
+    background-color: var(--accent-color-danger, #D32F2F);
+    color: var(--font-color-light);
+    box-shadow: 0 4px 10px rgba(211, 47, 47, 0.2);
+}
+.btn-danger:hover {
+    background-color: #C62828; /* Darker red */
+    box-shadow: 0 6px 15px rgba(211, 47, 47, 0.3);
+    transform: translateY(-2px);
+}
+.btn-danger:active {
+    transform: translateY(0);
+     background-color: #B71C1C; /* Even darker red */
+    box-shadow: 0 2px 5px rgba(211, 47, 47, 0.2);
+}
+
+/* Button Sizes (Optional) */
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85em;
+    border-radius: 20px;
+}
+.btn-lg {
+    padding: 15px 30px;
+    font-size: 1.15em;
+    border-radius: 30px;
+}
+
+/* Block Button (Full Width) */
+.btn-block {
+    display: block;
+    width: 100%;
+}
