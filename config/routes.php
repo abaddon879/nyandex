@@ -109,6 +109,9 @@ $app->group('/api', function(RouteCollectorProxy $group) {
         $group->delete('/cats/{cat_id:[0-9]+}', [Cats::class, 'delete'])->add(GetCat::class);
 
         $group->get('/versions', [Versions::class, 'index']);
+        $group->post('/versions', [Versions::class, 'create']);
+        $group->patch('/versions/{version_id}', [Versions::class, 'update']);
+        $group->get('/versions/latest', [Versions::class, 'latest']);
         // ... (all other version routes) ...
     })->add(RequireAdmin::class);
 

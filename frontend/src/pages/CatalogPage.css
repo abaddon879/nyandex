@@ -1,0 +1,33 @@
+/* Implements Spec 7.2: 2-column layout */
+.catalog-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Fills the .page-content area */
+}
+
+.catalog-layout {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden; /* Prevents double scrollbars */
+}
+
+.catalog-gallery-wrapper {
+  flex-grow: 3; /* Gallery takes up ~75% */
+  overflow-y: auto; /* Gallery area scrolls */
+  padding: var(--space-3);
+  background-color: var(--color-bg-primary);
+}
+
+.catalog-sidebar-wrapper {
+  flex-grow: 1; /* Sidebar takes up ~25% */
+  min-width: 320px;
+  max-width: 400px;
+  overflow-y: auto; /* Sidebar scrolls */
+  border-left: 1px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
+}
+
+/* Spec 7.7: When in bulk-edit mode, hide the sidebar */
+.catalog-layout.mode-bulk-edit .catalog-sidebar-wrapper {
+  display: none;
+}

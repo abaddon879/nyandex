@@ -1,0 +1,18 @@
+.catalog-top-bar {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  background-color: var(--color-bg-secondary);
+}
+
+.catalog-top-bar .form-input {
+  flex-grow: 1;
+  min-width: 150px;
+}
+
+.catalog-top-bar .btn-bulk-edit {
+  margin-left: auto; /* Pushes Bulk Edit button to the right */
+}

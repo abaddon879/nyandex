@@ -147,6 +147,12 @@ return [
             'destination_table' => 'picture_book_data', // You'll need a corresponding final table
             'source_dir_key' => 'unit_data_storage_dir',
             'has_header' => false,
+        ],
+        'unit_stats' => [
+            'source_file' => 'units.csv', // The merged file with all stats
+            'destination_table' => 'unit_stats', // This becomes 'temp_unit_stats'
+            'source_dir_key' => 'unit_data_storage_dir',
+            'has_header' => false, // As per your CsvMergeController logic
         ],        
     ],
 
@@ -165,11 +171,11 @@ return [
      * Database & API Connection
      * Credentials are loaded from the .env file for security.
      */
-    'api_base_url' => 'http://pat.localhost/api',
+    'api_base_url' => 'http://nyandex.test/api',
     'db' => [
         'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
         'port' => $_ENV['DB_PORT'] ?? '3306',
-        'database' => $_ENV['DB_NAME'] ?? 'pawesome_tracker',
+        'database' => $_ENV['DB_NAME'] ?? 'nyandb',
         'username' => $_ENV['DB_USER'] ?? 'root',
         'password' => $_ENV['DB_PASS'] ?? '',
     ],

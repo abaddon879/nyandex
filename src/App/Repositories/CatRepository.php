@@ -92,11 +92,13 @@ class CatRepository
         // 2. Get all Forms and their Stats
         $sqlForms = "SELECT 
                         f.form_id, f.form_name, f.description, f.required_level, f.required_xp, f.image_url,
+                        t.form_name as generic_form_name, -- This is the new field
                         s.health, s.knockbacks, s.move_speed, s.attack_power, s.attack_range,
                         s.attack_frequency_f, s.attack_foreswing_f, s.attack_backswing_f,
                         s.recharge_time_f, s.cost, s.attack_type, s.hit_count
                      FROM cat_form f
                      JOIN cat_form_stat s ON f.cat_id = s.cat_id AND f.form_id = s.form_id
+                     JOIN form t ON f.form_id = t.form_id -- The new JOIN
                      WHERE f.cat_id = :id
                      ORDER BY f.form_id ASC";
         
@@ -136,6 +138,7 @@ class CatRepository
             $formsResult[] = [
                 'form_id' => (int)$formId,
                 'form_name' => $form['form_name'],
+                'generic_form_name' => $form['generic_form_name'], // <-- Add the new field
                 'description' => $form['description'],
                 'image_url' => $form['image_url'],
                 'evolution' => [

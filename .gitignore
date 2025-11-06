@@ -14,6 +14,7 @@ composer.lock
 .env
 *.env.*
 /logs/
+/config/generate_admin.php
 
 # Specific file types
 *.log

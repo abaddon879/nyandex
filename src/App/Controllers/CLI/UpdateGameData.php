@@ -249,13 +249,13 @@ function updateGameData() {
 // Function to call the /api/versions/latest endpoint and retrieve the latest version
 function getLatestVersionFromAPI() {
     $config = \App\Controllers\GameData\ConfigLoader::load();
-    $apiUrl = $config['api_base_url'] . '/versions/latest';
-    $apiKey = $_ENV['API_KEY'];
+    $apiUrl = $config['api_base_url'] . '/admin/versions/latest';
+    $apiKey = $_ENV['ADMIN_API_KEY'];
 
     $ch = curl_init($apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPGET, true);
-    $headers = ['X-API-Key: ' . $apiKey];
+    $headers = ['Authorization: Bearer ' . $apiKey];
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     $response = curl_exec($ch);
 
@@ -290,14 +290,14 @@ function getLatestVersionFromAPI() {
 // Function to POST the new version to the API
 function postNewVersionToAPI($data) {
     $config = \App\Controllers\GameData\ConfigLoader::load();
-    $apiUrl = $config['api_base_url'] . '/versions';
-    $apiKey = $_ENV['API_KEY'];
+    $apiUrl = $config['api_base_url'] . '/admin/versions';
+    $apiKey = $_ENV['ADMIN_API_KEY'];
 
     $ch = curl_init($apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     $headers = [
-        'X-API-Key: ' . $apiKey,
+        'Authorization: Bearer ' . $apiKey,
         'Content-Type: application/json'
     ];
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
@@ -325,8 +325,8 @@ function postNewVersionToAPI($data) {
 // Function to PATCH the new version to the API
 function patchNewVersionToAPI($data) {
     $config = \App\Controllers\GameData\ConfigLoader::load();
-    $apiUrl = $config['api_base_url'] . '/versions/' . urlencode($data['version_id']);
-    $apiKey = $_ENV['API_KEY'];
+    $apiUrl = $config['api_base_url'] . '/admin/versions/' . urlencode($data['version_id']);
+    $apiKey = $_ENV['ADMIN_API_KEY'];
 
     if (!isset($data['download_date'])) {
         logMessage("Error: download_date is missing.", 'ERROR', 'API');
@@ -339,7 +339,7 @@ function patchNewVersionToAPI($data) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
     $headers = [
-        'X-API-Key: ' . $apiKey,
+        'Authorization: Bearer ' . $apiKey,
         'Content-Type: application/json'
     ];
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);

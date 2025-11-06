@@ -5,7 +5,7 @@ START TRANSACTION;
 -- =================================================================================
 -- Step 1: Populate the `cat` table
 -- =================================================================================
-INSERT INTO cat (cat_id, cat_order_id, rarity_id, boostable, max_level, max_plus_level, introduced_in_version_id)
+INSERT INTO cat (cat_id, cat_order_id, rarity_id, boostable, max_level, max_plus_level, introduced_version_id)
 SELECT
     ub.cat_id,
     ub.col_15 AS cat_order_id,
@@ -13,7 +13,7 @@ SELECT
     ub.col_50 AS boostable,
     ub.col_51 AS max_level,
     ub.col_52 AS max_plus_level,
-    '{{VERSION}}' AS introduced_in_version_id -- Add the placeholder to the SELECT list
+    '{{VERSION}}' AS introduced_version_id -- Add the placeholder to the SELECT list
 
 FROM
     (SELECT *, (ROW_NUMBER() OVER (ORDER BY id) - 1) AS cat_id FROM temp_unit_evolutions) AS ub
@@ -34,11 +34,11 @@ ON DUPLICATE KEY UPDATE
 -- =================================================================================
 -- Step 2: Populate the `cat_form` table
 -- =================================================================================
-INSERT INTO cat_form (cat_id, form_id, cat_form_name, description, required_level, required_xp, egg_id, image_url, introduced_in_version_id)
+INSERT INTO cat_form (cat_id, form_id, form_name, description, required_level, required_xp, egg_id, image_url, introduced_version_id)
 SELECT
     ub.cat_id,
     ex.col_2 as form_id, -- Assuming col_2 in unit_explanations is the form_id
-    ex.col_3 as cat_form_name, -- Assuming col_3 is the name
+    ex.col_3 as form_name, -- Assuming col_3 is the name
     CONCAT_WS(
         CHAR(13, 10), -- The separator is a newline character
         NULLIF(ex.col_4, ''), -- Convert empty strings to NULL so CONCAT_WS skips them
@@ -80,7 +80,7 @@ SELECT
         WHEN ex.col_2 = 3 THEN CONCAT('uni', LPAD(ub.id -1, 3, '0'), '_s00.png')
         WHEN ex.col_2 = 4 THEN CONCAT('uni', LPAD(ub.id -1, 3, '0'), '_u00.png')
     END AS image_url,
-    '{{VERSION}}' AS introduced_in_version_id
+    '{{VERSION}}' AS introduced_version_id
 FROM
     (SELECT *, (ROW_NUMBER() OVER (ORDER BY id) - 1) AS cat_id FROM temp_unit_evolutions) AS ub
 JOIN
@@ -93,7 +93,7 @@ WHERE
 AND ex.col_2 <= pb.col_3
 AND ub.col_15 >= 0
 ON DUPLICATE KEY UPDATE
-    cat_form_name = VALUES(cat_form_name),
+    form_name = VALUES(form_name),
     description = VALUES(description),
     required_level = VALUES(required_level),
     required_xp = VALUES(required_xp),
@@ -161,5 +161,85 @@ WHERE
     )
 ON DUPLICATE KEY UPDATE
     item_qty = VALUES(item_qty);
+
+
+-- =================================================================================
+-- Step 4: Populate the `cat_form_stat` table
+-- =================================================================================
+-- Purpose: Extracts the Level 1 base stats from the raw unit data file
+--          and inserts them into the normalized stats table.
+-- Source:  temp_unit_evolutions (loaded from units.csv)
+-- Target:  cat_form_stat
+
+
+
+INSERT INTO cat_form_stat (
+    cat_id,
+    form_id,
+    health,
+    knockbacks,
+    move_speed,
+    attack_power,
+    attack_range,
+    attack_frequency_f,
+    attack_foreswing_f,
+    attack_backswing_f,
+    recharge_time_f,
+    cost,
+    attack_type,
+    hit_count
+)
+SELECT
+    -- col_0 and col_1 are the cat_id and form_id added by CsvMergeController
+    -- FIX: Column index shifted from col_0 -> col_1, col_1 -> col_2, etc.
+    CAST(us.col_1 AS UNSIGNED) AS cat_id,
+    CAST(us.col_2 AS UNSIGNED) AS form_id,
+    
+    -- Stat Mapping based on units.csv inspection
+    -- FIX: All column indexes shifted +1
+    CAST(us.col_3 AS SIGNED) AS health,
+    CAST(us.col_4 AS SIGNED) AS knockbacks,
+    CAST(us.col_5 AS SIGNED) AS move_speed,
+    CAST(us.col_6 AS SIGNED) AS attack_power,
+    CAST(us.col_8 AS SIGNED) AS attack_range,
+    CAST(us.col_7 AS SIGNED) AS attack_frequency_f,
+    CAST(us.col_16 AS SIGNED) AS attack_foreswing_f,
+    CAST(us.col_18 AS SIGNED) AS attack_backswing_f,
+    CAST(us.col_10 AS SIGNED) AS recharge_time_f,
+    CAST(us.col_9 AS SIGNED) AS cost,
+    
+    -- Convert attack_type from number to ENUM string
+    CASE 
+        WHEN us.col_15 = '0' THEN 'Single'
+        WHEN us.col_15 = '1' THEN 'Area'
+        ELSE 'Single' -- Default to Single if data is unexpected
+    END AS attack_type,
+    
+    -- ASSUMPTION: hit_count is 1. 
+    1 AS hit_count
+
+FROM
+    temp_unit_stats AS us
+WHERE
+    -- Ensure the cat_id exists in our main `cat` table
+    us.col_1 IN (SELECT cat_id FROM cat)
+    
+    -- Ensure the form_id is a valid form for that cat
+    AND us.col_2 IN (SELECT form_id FROM cat_form WHERE cat_form.cat_id = us.col_1)
+
+-- On duplicate, update all stats to the new version's values
+ON DUPLICATE KEY UPDATE
+    health = VALUES(health),
+    knockbacks = VALUES(knockbacks),
+    move_speed = VALUES(move_speed),
+    attack_power = VALUES(attack_power),
+    attack_range = VALUES(attack_range),
+    attack_frequency_f = VALUES(attack_frequency_f),
+    attack_foreswing_f = VALUES(attack_foreswing_f),
+    attack_backswing_f = VALUES(attack_backswing_f),
+    recharge_time_f = VALUES(recharge_time_f),
+    cost = VALUES(cost),
+    attack_type = VALUES(attack_type),
+    hit_count = VALUES(hit_count);
 
 COMMIT;

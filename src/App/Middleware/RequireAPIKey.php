@@ -30,19 +30,38 @@ class RequireAPIKey
             return $this->createError(401, 'Invalid Authorization header format. Expected: Bearer <api_key>');
         }
 
-        // 3. Your v0.5 hash logic (which is correct)
+        // 3. Check if this is the static ADMIN_API_KEY from .env
+        $adminKeyFromEnv = $_ENV['ADMIN_API_KEY'] ?? null;
+
+        if ($adminKeyFromEnv && $api_key === $adminKeyFromEnv) {
+            
+            // It's the admin script. Create a "mock" admin user.
+            $adminUser = [
+                'user_id' => 0, // 0 for system/script
+                'username' => 'admin_script',
+                'is_admin' => true,
+                'is_anonymous' => false
+            ];
+            
+            // Attach the admin user and pass the request to the next handler
+            $request = $request->withAttribute('user', $adminUser);
+            return $handler->handle($request);
+        }
+        
+        // 4. If NOT the admin key, proceed with normal user validation
+        // (This is your original code, unchanged)
         $api_key_hash = hash_hmac('sha256', $api_key, $_ENV['HASH_SECRET_KEY']);
         $user = $this->repository->find('api_key_hash', $api_key_hash);
 
-        // 4. Validate user
+        // 5. Validate user
         if ($user === false) {
             return $this->createError(401, 'Invalid API key.');
         }
         
-        // 5. Update the last_accessed_at timestamp for this user
+        // 6. Update the last_accessed_at timestamp for this user
         $this->repository->updateLastAccessed($user['user_id']);
 
-        // 6. Attach the authenticated user (as an array) to the request
+        // 7. Attach the authenticated user (as an array) to the request
         $request = $request->withAttribute('user', $user);
         
         return $handler->handle($request);

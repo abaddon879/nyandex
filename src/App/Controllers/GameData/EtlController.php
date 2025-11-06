@@ -113,7 +113,7 @@ class EtlController
                 }
                 
                 // Create the temporary table.
-                $columnsSql = '`id` INT AUTO_INCREMENT PRIMARY KEY, ' . '`' . implode('` VARCHAR(255), `', $sanitizedHeader) . '` VARCHAR(255)';
+                $columnsSql = '`id` INT AUTO_INCREMENT PRIMARY KEY, ' . '`' . implode('` TEXT, `', $sanitizedHeader) . '` TEXT';
                 $this->pdo->exec("DROP TEMPORARY TABLE IF EXISTS `{$tempTableName}`;");
                 $this->pdo->exec("CREATE TEMPORARY TABLE `{$tempTableName}` ({$columnsSql});");
 

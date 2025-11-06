@@ -1,0 +1,45 @@
+// This helper function handles all our API calls and errors
+async function apiFetch(endpoint, method = 'GET', body = null) {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+
+    // Get the auth token from local storage (if it exists)
+    const token = localStorage.getItem('api_key');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // The '/api' prefix tells Vite to use the proxy
+    const response = await fetch(`/api${endpoint}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+    }
+
+    return response.status === 204 ? null : response.json();
+}
+
+export const authService = {
+    // 1.1 Create Anonymous User
+    createAnonymous: () => apiFetch('/users/anonymous', 'POST'),
+
+    // 1.8 Get Current User Info
+    getUserMe: () => apiFetch('/users/me'),
+
+    // 1.3 Login Registered User
+    login: (username_or_email, password) => 
+        apiFetch('/users/login', 'POST', { username_or_email, password }),
+
+    // 1.2 Convert Guest to Registered User
+    convert: (username, email, password) => 
+        apiFetch('/users/convert', 'POST', { username, email, password }),
+
+    // 1.4 Logout Registered User
+    logout: () => apiFetch('/users/logout', 'POST'),
+};

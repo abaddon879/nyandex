@@ -1,0 +1,57 @@
+/* Implements Spec 7.5: Cat Card styling */
+.cat-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-1);
+  text-align: center;
+  background-color: var(--color-bg-primary);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+}
+
+.cat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  border-color: var(--color-accent-primary);
+}
+
+/* Style for a selected card in bulk-edit */
+.cat-card.is-selected {
+  background: #fff8e1;
+  border-color: var(--color-accent-primary);
+}
+
+/* Style for un-owned cats (Spec 7.5) */
+.cat-card.is-missing {
+  opacity: 0.6;
+}
+.cat-card.is-missing .cat-card-icon {
+  filter: grayscale(100%);
+}
+
+.cat-card-checkbox {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  z-index: 2;
+  transform: scale(1.5);
+}
+
+.cat-card-icon {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.cat-card-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: block;
+  color: var(--color-text-primary);
+}
+
+.cat-card-level {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}

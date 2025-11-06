@@ -123,7 +123,7 @@ CREATE TABLE user (
     username VARCHAR(50) DEFAULT NULL UNIQUE,
     email VARCHAR(255) DEFAULT NULL UNIQUE,
     password_hash VARCHAR(255) DEFAULT NULL,
-    api_key_hash varchar(64) DEFAULT NULL UNIQUE,
+    --api_key_hash varchar(64) DEFAULT NULL UNIQUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP NULL DEFAULT NULL,
     last_accessed_at TIMESTAMP NULL DEFAULT NULL,
@@ -131,6 +131,19 @@ CREATE TABLE user (
     `admin` BOOLEAN NOT NULL DEFAULT FALSE,
     `anonymous` BOOLEAN NOT NULL DEFAULT TRUE,
     INDEX idx_cleanup (`anonymous`, last_accessed_at)
+);
+
+CREATE TABLE auth_token (
+    token_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    token_hash VARCHAR(64) NOT NULL UNIQUE, 
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP NULL,
+    INDEX idx_user_id (user_id), 
+    CONSTRAINT fk_token_user
+        FOREIGN KEY (user_id) REFERENCES user(user_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE user_cat (
