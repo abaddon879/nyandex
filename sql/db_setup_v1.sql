@@ -90,7 +90,7 @@ CREATE TABLE cat_form_stat (
   attack_backswing_f smallint UNSIGNED NOT NULL COMMENT 'Time after damage point (frames)',
   recharge_time_f smallint UNSIGNED NOT NULL COMMENT 'Cooldown frames',
   cost smallint UNSIGNED NOT NULL,
-  attack_type TINYINT UNSIGNED NOT NULL COMMENT '1=Single Target, 2=Area Attack',
+  attack_type TINYINT UNSIGNED NOT NULL COMMENT '0=Single Target, 1=Area Attack',
   hit_count TINYINT UNSIGNED NOT NULL,
   PRIMARY KEY (cat_id, form_id),
   FOREIGN KEY (cat_id, form_id) REFERENCES cat_form (cat_id, form_id) ON DELETE CASCADE

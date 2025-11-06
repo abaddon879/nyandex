@@ -207,13 +207,7 @@ SELECT
     CAST(us.col_18 AS SIGNED) AS attack_backswing_f,
     CAST(us.col_10 AS SIGNED) AS recharge_time_f,
     CAST(us.col_9 AS SIGNED) AS cost,
-    
-    -- Convert attack_type from number to ENUM string
-    CASE 
-        WHEN us.col_15 = '0' THEN 'Single'
-        WHEN us.col_15 = '1' THEN 'Area'
-        ELSE 'Single' -- Default to Single if data is unexpected
-    END AS attack_type,
+    CAST(us.col_15 AS UNSIGNED) AS attack_type,
     
     -- ASSUMPTION: hit_count is 1. 
     1 AS hit_count
