@@ -3,65 +3,63 @@ declare(strict_types=1);
 
 namespace App\Controllers\Auth;
 
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Psr\Http\Message\ResponseInterface as Response;
 use App\Repositories\UserRepository;
-use Slim\Psr7\Factory\ResponseFactory;
+use App\Repositories\AuthTokenRepository;
+use App\Utils\TokenGenerator;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use DateTime;
+use PDO;
 
 class AnonymousUserController
 {
-    public function __construct(private UserRepository $repository, 
-                                private ResponseFactory $factory)
+    use TokenGenerator;
+
+    private UserRepository $userRepo;
+    private AuthTokenRepository $tokenRepo;
+    private PDO $db; // For transaction
+
+    public function __construct(UserRepository $userRepo, AuthTokenRepository $tokenRepo, PDO $db)
     {
+        $this->userRepo = $userRepo;
+        $this->tokenRepo = $tokenRepo;
+        $this->db = $db;
     }
 
     /**
-     * Implements API Endpoint 1.1: Create Anonymous User
-     * POST /api/users/anonymous
+     * 1.1 Create Anonymous User
      */
     public function create(Request $request, Response $response): Response
     {
         try {
-            // 1. Generate a new, unique API key
-            $api_key = bin2hex(random_bytes(32)); // 64-char key
-            $api_key_hash = hash_hmac('sha256', $api_key, $_ENV['HASH_SECRET_KEY']);
+            $this->db->beginTransaction();
 
-            // 2. Prepare data for the new anonymous user
-            $data = [
-                'api_key_hash' => $api_key_hash,
-                'anonymous' => true,
-                'last_accessed_at' => gmdate('Y-m-d H:i:s')
-            ];
-            
-            // 3. Create the user using the refactored repository
-            $new_user_id = $this->repository->create($data);
-
-            if ($new_user_id === false) {
-                 return $this->createError($response, 500, 'Failed to create user account.');
+            // 1. Create the anonymous user
+            $userId = $this->userRepo->createAnonymous();
+            if ($userId === null) {
+                throw new \Exception("Failed to create user");
             }
 
-            // 4. Return the plain-text key and user_id (as per Spec 1.1)
-            $responseData = [
-                'api_key' => $api_key,
-                'user_id' => $new_user_id
-            ];
+            // 2. Generate a new token
+            $tokens = $this->generateToken();
             
-            $response->getBody()->write(json_encode($responseData));
-            return $response->withStatus(201); // 201 Created
+            // Set expiration based on spec for guest cleanup
+            $expiresAt = (new DateTime('+180 days'))->format('Y-m-d H:i:s');
+
+            // 3. Create the auth token
+            $this->tokenRepo->create($userId, $tokens['hashed'], $expiresAt);
+
+            $this->db->commit();
+            
+            // 4. Return the raw token and user ID
+            $body = ['api_key' => $tokens['raw'], 'user_id' => $userId];
+            $response->getBody()->write(json_encode($body));
+            return $response->withStatus(201);
 
         } catch (\Exception $e) {
-            // Handle potential errors (e.g., random_bytes failure)
-            return $this->createError($response, 500, 'An internal error occurred: ' . $e->getMessage());
+            $this->db->rollBack();
+            $response->getBody()->write(json_encode(['error' => 'Could not create anonymous user']));
+            return $response->withStatus(500);
         }
-    }
-
-    /**
-     * Helper function to create a standardized JSON error response.
-     */
-    private function createError(Response $response, int $statusCode, string $message): Response
-    {
-        $response->getBody()->write(json_encode(['error' => $message]));
-        return $response->withStatus($statusCode)
-                       ->withHeader('Content-Type', 'application/json');
     }
 }
