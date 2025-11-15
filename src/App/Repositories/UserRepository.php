@@ -22,12 +22,10 @@ class UserRepository
      */
     public function findByUsernameOrEmail(string $identifier): ?array
     {
-        $sql = "SELECT * FROM user WHERE username = :identifier OR email = :identifier";
+        $sql = "SELECT * FROM user WHERE username = ? OR email = ?";
         
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':identifier', $identifier, PDO::PARAM_STR);
-        $stmt->execute();
-        
+        $stmt->execute([$identifier, $identifier]);        
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
         return $result ?: null;

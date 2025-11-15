@@ -39,7 +39,7 @@ class SessionController
         $user = $this->userRepo->findByUsernameOrEmail($data['username_or_email']);
 
         // 2. Verify password
-        if ($user === null || !password_verify($data['password'], $user['password_hash'])) {
+        if ($user === null || $user['password_hash'] === null || !password_verify($data['password'], $user['password_hash'])) {
             $response->getBody()->write(json_encode(['error' => 'Invalid credentials']));
             return $response->withStatus(401);
         }
