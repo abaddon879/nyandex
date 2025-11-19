@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useBlocker } from 'react-router-dom';
 import { catService } from '../api/catService';
 import { userTrackerService } from '../api/userTrackerService';
 import { authStore } from '../stores/authStore';
@@ -30,6 +30,9 @@ function CatDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  // [NEW] Track the original state to detect dirty changes
+  const [originalState, setOriginalState] = useState(null);
+
   // --- Data Fetching ---
   const fetchData = useCallback(async () => {
     if (!userId || isNaN(catId)) return;
@@ -53,22 +56,36 @@ function CatDetailPage() {
       // 3. Setup User State
       const defaultFormId = catDetails.forms[0]?.form_id || 1;
       
+      // Prepare the state values we want to set
+      let nextLevel = 1;
+      let nextPlus = 0;
+      let nextForm = defaultFormId;
+      let nextNotes = '';
+      let nextOwned = false;
+
       if (userProgress && userProgress.is_owned) {
-        setLevel(userProgress.level);
-        setPlusLevel(userProgress.plus_level);
-        setFormId(userProgress.form_id || defaultFormId);
-        setNotes(userProgress.notes || '');
-        setIsOwned(true);
-      } else {
-        // Default defaults
-        setLevel(1);
-        setPlusLevel(0);
-        setFormId(defaultFormId);
-        setIsOwned(false);
-      }
+        nextLevel = userProgress.level;
+        nextPlus = userProgress.plus_level;
+        nextForm = userProgress.form_id || defaultFormId;
+        nextNotes = userProgress.notes || '';
+        nextOwned = true;
+      } 
       
-      // Pin status can exist even if not owned
+      // Apply state
+      setLevel(nextLevel);
+      setPlusLevel(nextPlus);
+      setFormId(nextForm);
+      setNotes(nextNotes);
+      setIsOwned(nextOwned);
       setIsPinned(!!userProgress.is_pinned);
+
+      // [NEW] Save this as the "clean" state
+      setOriginalState({
+        level: nextLevel,
+        plusLevel: nextPlus,
+        formId: nextForm,
+        notes: nextNotes
+      });
 
     } catch (err) {
       console.error("Detail Fetch Error:", err);
@@ -83,6 +100,37 @@ function CatDetailPage() {
   }, [fetchData]);
 
 
+  // --- [NEW] Dirty Check & Blocker ---
+  
+  const isDirty = useMemo(() => {
+    if (!originalState) return false;
+    // Check if current state differs from original state
+    return (
+      level !== originalState.level ||
+      plusLevel !== originalState.plusLevel ||
+      formId !== originalState.formId ||
+      notes !== originalState.notes
+    );
+  }, [level, plusLevel, formId, notes, originalState]);
+
+  // React Router v6.4+ / v7 Hook to block navigation
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      const confirmLeave = window.confirm("You have unsaved changes. Are you sure you want to leave?");
+      if (confirmLeave) {
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+    }
+  }, [blocker]);
+
+
   // --- Handlers ---
 
   const handleSave = async () => {
@@ -95,8 +143,18 @@ function CatDetailPage() {
         form_id: formId,
         notes
       });
+      
       setIsOwned(true);
-      // Optional: Show Toast
+      
+      // [NEW] Update original state to match the newly saved state so isDirty becomes false
+      setOriginalState({
+        level,
+        plusLevel,
+        formId,
+        notes
+      });
+
+      alert("Saved successfully!");
     } catch (err) {
       alert(err.message);
     } finally {
@@ -133,9 +191,9 @@ function CatDetailPage() {
 
   // --- Render ---
 
-  if (isLoading) return <div className="page-loading">Loading Cat Details...</div>;
-  if (error) return <div className="page-error">{error}</div>;
-  if (!staticData) return <div className="page-error">Cat not found.</div>;
+  if (isLoading) return <div className="page-loading" style={{padding: '2rem'}}>Loading Cat Details...</div>;
+  if (error) return <div className="page-error" style={{padding: '2rem', color: 'red'}}>{error}</div>;
+  if (!staticData) return <div className="page-error" style={{padding: '2rem'}}>Cat not found.</div>;
 
   return (
     <div className="cat-detail-page">
@@ -210,7 +268,6 @@ function CatDetailPage() {
             <h2>Evolution</h2>
             <div className="evolution-list">
                 {staticData.forms.map((form, idx) => {
-                    const prevForm = staticData.forms[idx-1]; // To check transition
                     // Does this form have requirements? (Only needed for forms > 1)
                     const hasReqs = form.evolution && (form.evolution.required_level || form.evolution.requirements.length > 0);
 
@@ -319,6 +376,7 @@ function CatDetailPage() {
             
             <div className="last-updated">
                {isOwned ? "Owned" : "Not in collection"}
+               {isDirty && <div style={{color:'var(--color-accent-destructive)', fontWeight:'bold', marginTop:'0.5rem'}}>● Unsaved Changes</div>}
             </div>
         </div>
       </aside>

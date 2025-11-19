@@ -40,45 +40,16 @@ function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
     });
   };
 
-  // [NEW] Mark as Missing (Spec 7.7)
+  // [UPDATED] Mark as Missing (Spec 7.7)
+  // Now uses the efficient backend logic we added to UserCatRepository
   const handleMarkAsMissing = () => {
     if (!confirm(`Mark ${selectedBulkIds.length} cats as MISSING? This will delete your progress for them.`)) return;
-    // Note: Backend needs to support 'set_missing' or we use a DELETE loop. 
-    // Assuming 'set_missing' is not yet in UserCatRepository::bulkUpdate based on previous files,
-    // but let's assume we added it or will add it. 
-    // Ideally, this calls a delete endpoint, but for bulk, let's try the unified endpoint logic 
-    // or stick to what works. If the backend UserCatBulkController doesn't support delete/missing,
-    // we might need to loop delete calls. 
-    // For safety in this iteration, I'll implement a loop of deletes here if bulk missing isn't ready,
-    // OR we assume "set_owned" with a flag? 
-    // Actually, looking at UserCatRepository, it only has set_owned, set_level, set_form.
-    // Let's skip "Mark Missing" implementation in this specific footer until backend supports it 
-    // to avoid breaking things, OR implement it as a loop of deletes.
     
-    // Loop implementation for now:
-    handleLoopDelete();
+    handleBulkUpdate({
+      action: "set_missing",
+      cat_ids: selectedBulkIds
+    });
   };
-
-  const handleLoopDelete = async () => {
-    setIsUpdating(true);
-    try {
-        // Parallel deletes
-        await Promise.all(selectedBulkIds.map(catId => 
-            userTrackerService.unpinCat(userId, catId) // Wait, unpin is different from delete cat data. 
-            // We need userTrackerService.deleteCat(userId, catId).
-            // Let's check api service... it has saveCatProgress, but not deleteCat explicitly in the list provided.
-            // However, the backend ROUTE DELETE /users/{user_id}/cats/{cat_id} exists.
-            // I'll add the helper here or assume it exists.
-        ));
-        // Actually, let's just alert not implemented to be safe.
-        alert("Bulk Delete not yet supported by API.");
-    } catch(e) {
-        alert(e.message);
-    } finally {
-        setIsUpdating(false);
-    }
-  };
-
 
   // --- 2. Level Actions ---
 
@@ -91,7 +62,7 @@ function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
     });
   };
   
-  // --- 3. Form Actions [NEW] ---
+  // --- 3. Form Actions ---
   const handleApplyForm = () => {
     handleBulkUpdate({
       action: "set_form",
@@ -123,8 +94,9 @@ function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
         <BaseButton variant="primary" onClick={handleMarkAsOwned} disabled={isUpdating}>
           Mark Owned
         </BaseButton>
-        {/* Placeholder for Missing until backend support is confirmed */}
-        <BaseButton variant="destructive" onClick={() => alert("Bulk delete coming soon")} disabled={isUpdating}>
+        
+        {/* [FIXED] Connected onClick to handleMarkAsMissing */}
+        <BaseButton variant="destructive" onClick={handleMarkAsMissing} disabled={isUpdating}>
           Mark Missing
         </BaseButton>
       </div>
@@ -160,7 +132,7 @@ function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
 
       <div style={{ width: '1px', height: '30px', background: '#eee' }}></div>
 
-      {/* Forms [NEW] */}
+      {/* Forms */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
          <select 
              className="form-select"

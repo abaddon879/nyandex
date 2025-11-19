@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import CatCard from './CatCard.jsx';
 import BaseButton from '../base/BaseButton.jsx';
-import './CatGallery.css'; // <-- Import the stylesheet
+import './CatGallery.css';
 
 const PAGE_SIZE = 50;
 
@@ -15,26 +15,53 @@ function CatGallery({
 }) {
 
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    // Track the last clicked ID for shift-select logic
+    const lastClickedIdRef = useRef(null);
 
     useEffect(() => {
       setVisibleCount(PAGE_SIZE);
     }, [catList]);
 
-    const handleToggleBulk = (catId) => {
-        onBulkSelect(prevIds => {
-            if (prevIds.includes(catId)) {
-                return prevIds.filter(id => id !== catId);
-            } else {
-                return [...prevIds, catId];
+    const handleBulkSelection = (catId, isShiftKey) => {
+        if (isShiftKey && lastClickedIdRef.current !== null) {
+            // 1. Find indices in the full filtered list
+            const lastIndex = catList.findIndex(c => c.cat_id === lastClickedIdRef.current);
+            const currentIndex = catList.findIndex(c => c.cat_id === catId);
+
+            if (lastIndex !== -1 && currentIndex !== -1) {
+                const start = Math.min(lastIndex, currentIndex);
+                const end = Math.max(lastIndex, currentIndex);
+                
+                // 2. Get all IDs in range
+                const rangeIds = catList.slice(start, end + 1).map(c => c.cat_id);
+                
+                // 3. Merge unique IDs
+                onBulkSelect(prev => {
+                    const newSet = new Set([...prev, ...rangeIds]);
+                    return Array.from(newSet);
+                });
             }
-        });
+        } else {
+            // Standard Toggle
+            onBulkSelect(prevIds => {
+                if (prevIds.includes(catId)) {
+                    return prevIds.filter(id => id !== catId);
+                } else {
+                    return [...prevIds, catId];
+                }
+            });
+        }
+        
+        // Update ref
+        lastClickedIdRef.current = catId;
     };
 
-    const handleCatClick = (catId) => {
+    const handleCatClick = (catId, event) => {
         if (mode === 'view') {
             onCatSelect(catId);
         } else {
-            handleToggleBulk(catId);
+            // Pass the shift key state
+            handleBulkSelection(catId, event.shiftKey);
         }
     };
     
@@ -67,8 +94,13 @@ function CatGallery({
                             cat={cat}
                             userProgress={userProgress}
                             mode={mode}
-                            onClick={() => handleCatClick(cat.cat_id)}
-                            onCheckboxToggle={() => handleToggleBulk(cat.cat_id)}
+                            onClick={(e) => handleCatClick(cat.cat_id, e)}
+                            onCheckboxToggle={(e) => {
+                                // Handle direct checkbox clicks (prevent bubbling double triggers if necessary)
+                                // If CatCard stops propagation, we might need logic here, 
+                                // but usually onClick on the div is enough.
+                                // We pass 'e' to detect shift key here too if needed.
+                            }}
                             isSelected={isSelected}
                         />
                     );

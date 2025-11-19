@@ -112,6 +112,7 @@ class UserCatRepository
 
             foreach ($actions as $action) {
                 
+                // 1. Mark as OWNED
                 if ($action['action'] === 'set_owned') {
                     $sql = "INSERT INTO user_cat (user_id, cat_id, `level`, plus_level, form_id, created_at, modified_at)
                             VALUES (:user_id, :cat_id, 1, 0, :form_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -132,7 +133,24 @@ class UserCatRepository
                         $totalAffectedRows += $stmt->rowCount();
                     }
                 
+                // 2. Mark as MISSING (Delete) - [NEW IMPLEMENTATION]
+                } elseif ($action['action'] === 'set_missing') {
+                     if (empty($action['cat_ids'])) continue;
+
+                     $placeholders = implode(',', array_fill(0, count($action['cat_ids']), '?'));
+                     $sql = "DELETE FROM user_cat WHERE user_id = ? AND cat_id IN ($placeholders)";
+                     
+                     // Merge user_id with the list of cat_ids
+                     $params = array_merge([$user_id], $action['cat_ids']);
+                     
+                     $stmt = $pdo->prepare($sql);
+                     $stmt->execute($params);
+                     $totalAffectedRows += $stmt->rowCount();
+
+                // 3. Update Levels/Forms
                 } else {
+                    if (empty($action['cat_ids'])) continue;
+                    
                     $placeholders = implode(',', array_fill(0, count($action['cat_ids']), '?'));
 
                     switch ($action['action']) {
