@@ -136,3 +136,55 @@ h1, h2, h3, h4, h5, h6 {
   background-color: var(--color-accent-info); /* Blue/Teal */
   border-radius: 6px;
 }
+
+/* Mobile Sidebar Logic */
+.mobile-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar-wrapper {
+    position: fixed;
+    top: 60px; /* Below header */
+    left: -220px; /* Hide off-screen */
+    width: 220px;
+    height: calc(100vh - 60px);
+    z-index: 50;
+    transition: left 0.3s ease;
+  }
+  
+  .sidebar-wrapper.mobile-visible {
+    left: 0;
+  }
+
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - 60px);
+    background: rgba(0,0,0,0.5);
+    z-index: 40;
+  }
+}
+
+/* Hide hamburger on desktop */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: block;
+  }
+  .main-sidebar {
+    display: none; /* Hide default sidebar structure on mobile */
+  }
+  /* The .sidebar-wrapper in AppShell handles the mobile drawer */
+}

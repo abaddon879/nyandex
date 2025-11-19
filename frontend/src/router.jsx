@@ -5,50 +5,53 @@ import DashboardPage from './pages/DashboardPage';
 import CatalogPage from './pages/CatalogPage';
 import CatDetailPage from './pages/CatDetailPage';
 import AccountPage from './pages/AccountPage';
-import InventoryPage from './pages/InventoryPage.jsx';
+import InventoryPage from './pages/InventoryPage';
+import HelpPage from './pages/HelpPage'; // [NEW]
 
-// Define all routes as children of the AppShell
 const router = createBrowserRouter([
   {
     path: '/',
     element: <AppShell />,
-    // These components will be rendered inside AppShell's <Outlet />
     children: [
       {
-        index: true, // Default page (matches '/')
+        index: true,
         element: <DashboardPage />,
-        title: 'Dashboard'
+        handle: { title: 'Dashboard' } // [NEW] Metadata for Header
       },
       {
         path: 'dashboard',
         element: <DashboardPage />,
-        title: 'Dashboard'
+        handle: { title: 'Dashboard' }
       },
       {
         path: 'catalog',
         element: <CatalogPage />,
-        title: 'Cat Catalog'
+        handle: { title: 'Cat Catalog' }
       },
       {
         path: 'detail/:id',
         element: <CatDetailPage />,
-        title: 'Unit Details'
+        handle: { title: 'Unit Details' }
       },
       {
         path: 'inventory',
         element: <InventoryPage />,
-        title: 'Inventory'
+        handle: { title: 'Inventory' }
       },
       {
         path: 'account',
         element: <AccountPage />,
-        title: 'My Account'
+        handle: { title: 'My Account' }
+      },
+      {
+        path: 'help', // [NEW]
+        element: <HelpPage />,
+        handle: { title: 'Help & FAQ' }
       },
     ],
   },
 ]);
 
-// A simple component to export the router provider
 export function AppRouter() {
   return <RouterProvider router={router} />;
 }
