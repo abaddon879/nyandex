@@ -192,7 +192,7 @@ INSERT INTO cat_form_stat (
 SELECT
     -- col_0 and col_1 are the cat_id and form_id added by CsvMergeController
     -- FIX: Column index shifted from col_0 -> col_1, col_1 -> col_2, etc.
-    CAST(us.col_1 AS UNSIGNED) AS cat_id,
+    (CAST(us.col_1 AS UNSIGNED) -1) AS cat_id,
     CAST(us.col_2 AS UNSIGNED) AS form_id,
     
     -- Stat Mapping based on units.csv inspection
@@ -216,7 +216,7 @@ FROM
     temp_unit_stats AS us
 WHERE
     -- Ensure the cat_id exists in our main `cat` table
-    us.col_1 IN (SELECT cat_id FROM cat)
+    (CAST(us.col_1 AS UNSIGNED) - 1) IN (SELECT cat_id FROM cat)
     
     -- Ensure the form_id is a valid form for that cat
     AND us.col_2 IN (SELECT form_id FROM cat_form WHERE cat_form.cat_id = us.col_1)
