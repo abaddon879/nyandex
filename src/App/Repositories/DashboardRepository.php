@@ -15,15 +15,12 @@ class DashboardRepository
         $this->pdo = $this->database->getConnection();
     }
 
-    /**
-     * Implements API Spec 2.1: Get Dashboard Data
-     * Fetches all calculated data for the user's dashboard.
-     */
+    // ... (getDashboardData stays the same) ...
     public function getDashboardData(int $user_id): array
     {
         $pinnedUnitsData = $this->getPinnedUnits($user_id);
 
-        $dashboard = [
+        return [
             'my_progress' => $this->getMyProgress($user_id),
             'ready_to_evolve' => $this->getReadyToEvolve($user_id),
             'pinned_units' => $pinnedUnitsData['units'],
@@ -31,23 +28,24 @@ class DashboardRepository
             'catseyes' => $this->getInventoryGroup($user_id, ['Catseye']),
             'xp_tracker' => $this->getXpTracker($user_id, $pinnedUnitsData['total_xp_needed'])
         ];
-
-        return $dashboard;
     }
 
     /**
-     * Widget 1: My Progress (Working)
+     * Widget 1: My Progress
+     * Updated to include User Rank calculation.
      */
     private function getMyProgress(int $user_id): array
     {
+        // Added the third subquery for User Rank
         $sqlUser = "SELECT 
                         (SELECT COUNT(cat_id) FROM user_cat WHERE user_id = ?) as owned,
                         (SELECT COUNT(uc.cat_id) FROM user_cat uc
                          JOIN cat_form cf ON uc.cat_id = cf.cat_id AND uc.form_id = cf.form_id
-                         WHERE uc.user_id = ? AND cf.form_id = 3) as true_forms";
+                         WHERE uc.user_id = ? AND cf.form_id = 3) as true_forms,
+                        (SELECT COALESCE(SUM(`level` + plus_level), 0) FROM user_cat WHERE user_id = ?) as user_rank";
         
         $stmtUser = $this->pdo->prepare($sqlUser);
-        $stmtUser->execute([$user_id, $user_id]);
+        $stmtUser->execute([$user_id, $user_id, $user_id]);
         $userProgress = $stmtUser->fetch(PDO::FETCH_ASSOC);
 
         $sqlTotals = "SELECT
@@ -62,18 +60,21 @@ class DashboardRepository
             'cats_owned_total' => (int)$totals['total_cats'],
             'true_forms_count' => (int)$userProgress['true_forms'],
             'true_forms_total' => (int)$totals['total_true_forms'],
+            'user_rank'        => (int)$userProgress['user_rank'] // New field
         ];
     }
 
-    /**
-     * Widget 2: Ready to Evolve (Working)
-     */
+    // ... (The rest of the file: getReadyToEvolve, getPinnedUnits, etc. remain unchanged) ...
+    // (Include them if you are copying the whole file, otherwise just update getMyProgress)
+    
     private function getReadyToEvolve(int $user_id): array
     {
+        // (Keep the version with image_url from the previous step)
         $sql = "SELECT 
                     uc.cat_id, 
                     c.rarity_id,
-                    cf_next.form_name as next_form_name
+                    cf_next.form_name as next_form_name,
+                    cf_next.image_url
                 FROM user_cat uc
                 JOIN cat_form cf_next ON uc.cat_id = cf_next.cat_id
                 JOIN cat c ON uc.cat_id = c.cat_id
@@ -107,16 +108,15 @@ class DashboardRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Widget 3: Pinned Units
-     */
     private function getPinnedUnits(int $user_id): array
     {
-        $nextEvoSubquery = "
+         // (Keep the version with image_url from the previous step)
+         $nextEvoSubquery = "
             SELECT 
                 p.cat_id, 
                 COALESCE(uc.form_id, 1) as current_form_id,
                 cf_current.form_name as current_form_name,
+                cf_current.image_url as current_image_url,
                 next_form.form_id as next_form_id,
                 next_form.required_level,
                 next_form.required_xp,
@@ -136,10 +136,10 @@ class DashboardRepository
         ";
 
         $sql = "
-            -- Query 1: Find missing items
             SELECT 
                 evo.cat_id, 
                 evo.current_form_name as form_name,
+                evo.current_image_url as unit_image,
                 'item' as missing_type,
                 req.item_id,
                 i.item_name,
@@ -155,10 +155,10 @@ class DashboardRepository
 
             UNION ALL
 
-            -- Query 2: Find missing XP
             SELECT 
                 evo.cat_id, 
                 evo.current_form_name as form_name,
+                evo.current_image_url as unit_image,
                 'xp' as missing_type,
                 NULL as item_id,
                 'XP' as item_name,
@@ -171,10 +171,10 @@ class DashboardRepository
 
             UNION ALL
 
-            -- Query 3: Find missing Levels
             SELECT 
                 evo.cat_id, 
                 evo.current_form_name as form_name,
+                evo.current_image_url as unit_image,
                 'level' as missing_type,
                 NULL as item_id,
                 'Level' as item_name,
@@ -187,12 +187,10 @@ class DashboardRepository
         ";
         
         $stmt = $this->pdo->prepare($sql);
-        // [FIX] We now have 10 parameters to bind
         $params = [$user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id, $user_id];
         $stmt->execute($params);
         $missingRequirements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Query for Total XP needed
         $sqlXp = "SELECT COALESCE(SUM(cf.required_xp), 0) as total_xp
                   FROM user_pinned_cat p
                   LEFT JOIN user_cat uc ON p.cat_id = uc.cat_id AND p.user_id = ?
@@ -208,7 +206,6 @@ class DashboardRepository
         $stmtXp->execute([$user_id, $user_id]);
         $totalXpNeeded = (int)$stmtXp->fetchColumn();
 
-        // (The rest of the method is for formatting and is correct)
         $units = [];
         foreach ($missingRequirements as $item) {
             $catId = $item['cat_id'];
@@ -216,6 +213,7 @@ class DashboardRepository
                 $units[$catId] = [
                     'cat_id' => $catId,
                     'form_name' => $item['form_name'],
+                    'unit_image' => $item['unit_image'],
                     'missing_requirements' => []
                 ];
             }
@@ -225,8 +223,7 @@ class DashboardRepository
                 'image_url' => $item['image_url'],
                 'needed' => (int)$item['needed'],
                 'owned' => (int)$item['owned'],
-                'deficit' => $item['deficit'] ? (int)$item['deficit'] : 0,
-                // [FIX] Redundant 'xp_needed' field removed
+                'deficit' => (int)$item['deficit'],
             ];
         }
 
@@ -236,9 +233,6 @@ class DashboardRepository
         ];
     }
 
-    /**
-     * Widgets 4 & 5: Evolution Materials & Catseyes (Working)
-     */
     private function getInventoryGroup(int $user_id, array $item_types): array
     {
         $placeholders = implode(',', array_fill(0, count($item_types), '?'));
@@ -256,9 +250,6 @@ class DashboardRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Widget 6: XP Tracker (Working)
-     */
     private function getXpTracker(int $user_id, int $totalXpNeeded): array
     {
         $sql = "SELECT ui.item_quantity 
@@ -272,7 +263,7 @@ class DashboardRepository
 
         return [
             'current_xp' => $currentXp,
-            'needed_xp' => $totalXpNeeded, // [FIX] Corrected variable name from $totalXtNeeded
+            'needed_xp' => $totalXpNeeded,
             'deficit_xp' => ($currentXp - $totalXpNeeded)
         ];
     }

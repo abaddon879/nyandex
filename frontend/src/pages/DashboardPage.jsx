@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { authStore } from '../stores/authStore';
 import { userTrackerService } from '../api/userTrackerService';
-import './DashboardPage.css'; // We already have this
+import './DashboardPage.css';
 
-// Import all 6 widget components
+// Import all widgets
 import MyProgressWidget from '../components/dashboard/MyProgressWidget';
 import ReadyToEvolveWidget from '../components/dashboard/ReadyToEvolveWidget';
 import PinnedUnitsWidget from '../components/dashboard/PinnedUnitsWidget';
 import EvolutionMaterialsWidget from '../components/dashboard/EvolutionMaterialsWidget';
 import CatseyesWidget from '../components/dashboard/CatseyesWidget';
 import XpTrackerWidget from '../components/dashboard/XpTrackerWidget';
+// Import the new Banner
+import UpgradeCTABanner from '../components/dashboard/UpgradeCTABanner.jsx'; 
 
-// Placeholders
-const UpgradeCTABanner = () => <div style={{padding: '1rem', background: '#eee', marginBottom: '1rem'}}>[Upgrade CTA Banner]</div>;
-const DashboardSkeleton = () => <div>Loading Dashboard Data...</div>;
-
+const DashboardSkeleton = () => <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Dashboard Data...</div>;
 
 function DashboardPage() {
     const [authState, setAuthState] = useState(authStore.getState());
@@ -53,10 +52,9 @@ function DashboardPage() {
         return <p>Initializing session...</p>; 
     }
     
-    // [THE FIX] Removed the extra wrapper div. 
-    // The .page-content class from index.css will handle padding and scrolling.
     return (
         <div className="dashboard-container">
+            {/* Show Banner only for Guest Users */}
             {isAnonymous && <UpgradeCTABanner />} 
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
