@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom'; // [NEW] Import hook
 import { authStore } from '../stores/authStore';
 import { catService } from '../api/catService';
 import { userTrackerService } from '../api/userTrackerService';
@@ -10,6 +11,7 @@ import BulkActionFooter from '../components/catalog/BulkActionFooter.jsx';
 import './CatalogPage.css';
 
 function CatalogPage() {
+  const [searchParams, setSearchParams] = useSearchParams(); // [NEW] Hook usage
   const [userId, setUserId] = useState(authStore.getState().userId);
   const [mode, setMode] = useState('view');
   const [isLoading, setIsLoading] = useState(true);
@@ -17,14 +19,35 @@ function CatalogPage() {
   const [masterCatList, setMasterCatList] = useState([]);
   const [userCatMap, setUserCatMap] = useState(new Map());
   const [readyToEvolveIds, setReadyToEvolveIds] = useState(new Set());
-  const [filters, setFilters] = useState({ search: '', rarity: [], ownership: 'all', status: { readyToEvolve: false } });
+
+  // [NEW] Initialize filters based on URL param
+  const [filters, setFilters] = useState(() => {
+    const filterParam = searchParams.get('filter');
+    return { 
+      search: '', 
+      rarity: [], 
+      ownership: 'all', 
+      status: { readyToEvolve: filterParam === 'ready' } 
+    };
+  });
+
   const [sort, setSort] = useState({ field: 'cat_order_id', direction: 'ASC' });
   const [selectedCatId, setSelectedCatId] = useState(null);
   const [selectedBulkIds, setSelectedBulkIds] = useState([]);
 
+  // [NEW] Listen for URL changes (e.g. if clicking dashboard link while already on catalog)
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    if (filterParam === 'ready') {
+      setFilters(prev => ({
+        ...prev,
+        status: { ...prev.status, readyToEvolve: true }
+      }));
+    }
+  }, [searchParams]);
+
   const fetchPageData = useCallback(async () => {
     if (!userId) return;
-    // Don't set full page loading on refresh, only initial
     if (masterCatList.length === 0) setIsLoading(true);
     setError(null);
     try {
@@ -45,7 +68,7 @@ function CatalogPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]); // Removed masterCatList from dependency to prevent loops
+  }, [userId]); 
 
   useEffect(() => {
     const unsubscribe = authStore.subscribe(state => setUserId(state.userId));
@@ -94,7 +117,7 @@ function CatalogPage() {
             key={selectedCatId}
             catId={selectedCatId}
             userMap={userCatMap}
-            onDataChange={fetchPageData} // [FIX] Pass the refresh function
+            onDataChange={fetchPageData} 
           />
         </aside>
       </div>
