@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function PinnedUnitsWidget({ data }) {
   return (
@@ -20,7 +21,7 @@ function PinnedUnitsWidget({ data }) {
               {/* Cat Icon */}
               <Link to={`/detail/${unit.cat_id}`} className="pinned-unit-icon-wrapper">
                 <img 
-                  src={`${IMAGE_BASE_URL}${unit.unit_image}`} 
+                  src={`${BASE_URL}/units/${unit.unit_image}`} 
                   alt={unit.form_name} 
                   className="pinned-unit-icon"
                   loading="lazy"
@@ -37,7 +38,7 @@ function PinnedUnitsWidget({ data }) {
                     <div key={idx} className="missing-req-badge" title={`Need ${req.deficit} more ${req.item_name}`}>
                        {/* Show image if available (items), otherwise text (XP/Levels) */}
                        {req.image_url ? (
-                         <img src={`${IMAGE_BASE_URL}${req.image_url}`} alt={req.item_name} className="req-icon-sm"/>
+                         <img src={`${BASE_URL}/items/${req.image_url}`} alt={req.item_name} className="req-icon-sm"/>
                        ) : (
                          <span className="req-text-fallback">{req.item_name.substring(0,2)}</span>
                        )}

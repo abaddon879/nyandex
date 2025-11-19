@@ -6,7 +6,8 @@ import { authStore } from '../../stores/authStore';
 import BaseButton from '../base/BaseButton.jsx';
 import './QuickEvoView.css';
 
-const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 const StatCalculator = {
   getFinalStats: (stats, level, plus) => {
@@ -251,7 +252,8 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                         className={`form-icon-btn ${form.form_id == formId ? 'is-active' : ''}`}
                         title={form.form_name}
                     >
-                        <img src={IMAGE_BASE_URL + form.image_url} alt={form.form_name} loading="lazy" />
+                        {/* [FIX] Point to /units/ */}
+                        <img src={`${BASE_URL}/units/${form.image_url}`} alt={form.form_name} loading="lazy" />
                     </button>
                     <span className="form-icon-name">{form.generic_form_name}</span>
                     </div>

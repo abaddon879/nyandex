@@ -1,41 +1,41 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { authStore } from '../stores/authStore';
 import { userTrackerService } from '../api/userTrackerService';
-import { itemService } from '../api/itemService'; // We need the static item list
+import { itemService } from '../api/itemService'; 
 import QuantityInput from '../components/inventory/QuantityInput.jsx';
+
+// Robust URL handling: Ensures we point to the /items/ directory
+const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const ITEM_BASE_URL = RAW_BASE_URL.includes('/units') 
+  ? RAW_BASE_URL.replace('/units', '/items') 
+  : RAW_BASE_URL.replace(/\/$/, '') + '/items'; 
 
 function InventoryPage() {
   const [staticItems, setStaticItems] = useState([]);
-  const [userInventory, setUserInventory] = useState(new Map());
+  const [userInventory, setUserInventory] = useState([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userId, setUserId] = useState(authStore.getState().userId);
 
   useEffect(() => {
-    // Subscribe to auth changes
     const unsubscribe = authStore.subscribe(state => setUserId(state.userId));
     return unsubscribe;
   }, []);
 
   useEffect(() => {
-    // Fetch all data for the page
     async function fetchData() {
       if (!userId) return;
       setIsLoading(true);
       setError(null);
       try {
-        // Fetch static item definitions AND user's inventory
+        // Fetch static items AND the new "Smart" inventory list
         const [items, inventoryData] = await Promise.all([
           itemService.getItemDefinitions(),
           userTrackerService.getUserInventory(userId)
         ]);
         
-        // Convert user inventory array to a Map for fast lookups
-        const invMap = new Map();
-        inventoryData.forEach(item => invMap.set(item.item_id, item.item_quantity));
-
         setStaticItems(items);
-        setUserInventory(invMap);
+        setUserInventory(inventoryData);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -45,7 +45,13 @@ function InventoryPage() {
     fetchData();
   }, [userId]);
 
-  // --- Grouping Logic (Spec 8) ---
+  // Helper map for fast lookups of the user's specific data (qty owned + qty needed)
+  const inventoryMap = useMemo(() => {
+    const map = new Map();
+    userInventory.forEach(ui => map.set(ui.item_id, ui));
+    return map;
+  }, [userInventory]);
+
   const groupedItems = useMemo(() => {
     const groups = {
       EvolutionItems: [],
@@ -55,7 +61,6 @@ function InventoryPage() {
       BattleItems: [],
     };
     
-    // We loop through the *static* list to show all items
     for (const item of staticItems) {
       switch (item.item_type) {
         case 'Catseed':
@@ -72,7 +77,12 @@ function InventoryPage() {
         case 'Currency':
           groups.Currencies.push(item);
           break;
-        // ... add other cases as needed
+        case 'Ticket':
+          groups.Tickets.push(item);
+          break;
+        case 'Battle Item':
+          groups.BattleItems.push(item);
+          break;
         default:
           break;
       }
@@ -80,61 +90,86 @@ function InventoryPage() {
     return groups;
   }, [staticItems]);
 
-  // --- Render Logic ---
-  if (isLoading) return <div>Loading Inventory...</div>;
-  if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
+  if (isLoading) return <div style={{padding:'2rem'}}>Loading Inventory...</div>;
+  if (error) return <div style={{padding:'2rem', color:'red'}}>Error: {error}</div>;
 
   return (
-    <div>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <h1>Inventory</h1>
-      <p>Items will auto-save when you change their quantity.</p>
       
-      <input type="text" placeholder="Search inventory..." style={{ width: '100%', padding: '0.5rem' }} />
+      <input type="text" placeholder="Search inventory..." className="form-input" style={{ width: '100%', marginBottom: '1rem' }} />
 
       <ItemGroup 
-        title="Evolution Items" 
+        title="Evolution Materials" 
         items={groupedItems.EvolutionItems} 
-        userInventory={userInventory}
+        inventoryMap={inventoryMap}
         userId={userId} 
       />
       <ItemGroup 
-        title="Currencies" 
-        items={groupedItems.Currencies} 
-        userInventory={userInventory}
+        title="Catseyes" 
+        items={groupedItems.Catseyes} 
+        inventoryMap={inventoryMap}
         userId={userId} 
       />
-      {/* (Add other groups here) */}
+       <ItemGroup 
+        title="Currencies" 
+        items={groupedItems.Currencies} 
+        inventoryMap={inventoryMap}
+        userId={userId} 
+      />
+      <ItemGroup 
+        title="Tickets" 
+        items={groupedItems.Tickets} 
+        inventoryMap={inventoryMap}
+        userId={userId} 
+      />
     </div>
   );
 }
 
-/**
- * A helper component to render a single panel
- */
-function ItemGroup({ title, items, userInventory, userId }) {
+function ItemGroup({ title, items, inventoryMap, userId }) {
   if (items.length === 0) return null;
   
   return (
-    <div style={{ margin: '2rem 0', border: '1px solid #ccc', borderRadius: '6px' }}>
-      <h3 style={{ padding: '1rem', borderBottom: '1px solid #ccc', margin: 0 }}>{title}</h3>
-      {items.map(item => {
-        // Get the user's quantity for this item, default to 0
-        const userQty = userInventory.get(item.item_id) || 0;
-        
-        return (
-          <div key={item.item_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid #eee' }}>
-            <div>
-              {/* <img src={item.image_url} ... />  We'll fix images later */}
-              <span>{item.item_name}</span>
+    <div style={{ marginBottom: '2rem', background: '#fff', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
+      <h3 style={{ padding: '1rem', background: '#f8f9fa', borderBottom: '1px solid var(--color-border)', margin: 0, fontSize: '1.1rem' }}>{title}</h3>
+      <div>
+        {items.map(item => {
+          const userData = inventoryMap.get(item.item_id) || {};
+          const owned = userData.item_quantity || 0;
+          const needed = parseInt(userData.quantity_needed) || 0;
+          
+          // Styling for the "Needed" badge
+          const isDeficit = owned < needed;
+          
+          return (
+            <div key={item.item_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid #eee' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f1f1', borderRadius: '4px' }}>
+                   {item.image_url ? (
+                       <img src={`${ITEM_BASE_URL}/${item.image_url}`} alt={item.item_name} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                   ) : (
+                       <span>?</span>
+                   )}
+                </div>
+                <div>
+                    <div style={{ fontWeight: '600' }}>{item.item_name}</div>
+                    {needed > 0 && (
+                        <div style={{ fontSize: '0.8rem', color: isDeficit ? 'var(--color-accent-destructive)' : 'var(--color-accent-success)' }}>
+                            Needed: {needed} {isDeficit ? `(Missing ${needed - owned})` : '✓'}
+                        </div>
+                    )}
+                </div>
+              </div>
+              <QuantityInput 
+                userId={userId} 
+                itemId={item.item_id} 
+                initialQuantity={owned} 
+              />
             </div>
-            <QuantityInput 
-              userId={userId} 
-              itemId={item.item_id} 
-              initialQuantity={userQty} 
-            />
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

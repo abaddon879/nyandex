@@ -1,7 +1,9 @@
 import React from 'react';
 import './CatCard.css';
 
-const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+// Ensure we don't have double slashes if env var has trailing slash
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function CatCard({ cat, userProgress, mode, onClick, onCheckboxToggle, isSelected }) {
     
@@ -9,7 +11,6 @@ function CatCard({ cat, userProgress, mode, onClick, onCheckboxToggle, isSelecte
     
     let displayedForm = null;
     if (isOwned && userProgress.form_id) {
-        // [FIX] Use loose equality (==) to handle string vs int mismatch
         displayedForm = cat.forms.find(f => f.form_id == userProgress.form_id);
     }
     
@@ -17,7 +18,8 @@ function CatCard({ cat, userProgress, mode, onClick, onCheckboxToggle, isSelecte
         displayedForm = cat.forms.find(f => f.form_id == 1) || cat.forms[0];
     }
     
-    const iconUrl = IMAGE_BASE_URL + displayedForm?.icon_url;
+    // [FIX] Explicitly point to /units/
+    const iconUrl = `${BASE_URL}/units/${displayedForm?.icon_url}`;
 
     const cardClass = [
         'cat-card',

@@ -7,7 +7,8 @@ import { StatCalculator } from '../utils/StatCalculator';
 import BaseButton from '../components/base/BaseButton';
 import './CatDetailPage.css';
 
-const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function CatDetailPage() {
   const { id } = useParams(); // Get cat ID from URL
@@ -146,7 +147,7 @@ function CatDetailPage() {
         <section className="detail-hero">
           <div className="hero-image-container">
             {currentForm.image_url ? (
-                <img src={IMAGE_BASE_URL + currentForm.image_url} alt={currentForm.form_name} />
+                <img src={`${BASE_URL}/units/${currentForm.image_url}`} alt={currentForm.form_name} />
             ) : (
                 <div className="no-image-placeholder">?</div>
             )}
@@ -219,7 +220,7 @@ function CatDetailPage() {
                                 className="evolution-icon-wrapper" 
                                 onClick={() => setFormId(form.form_id)}
                             >
-                                <img src={IMAGE_BASE_URL + form.image_url} alt={form.form_name} />
+                                <img src={`${BASE_URL}/units/${form.image_url}`} alt={form.form_name} />
                                 <span className="evo-label">{form.generic_form_name}</span>
                             </div>
 

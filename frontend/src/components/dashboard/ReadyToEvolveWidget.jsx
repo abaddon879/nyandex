@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function ReadyToEvolveWidget({ data }) {
   // If we have more than 5 items, we only show the top 5
@@ -26,7 +27,7 @@ function ReadyToEvolveWidget({ data }) {
             {displayItems.map(cat => (
               <Link key={cat.cat_id} to={`/detail/${cat.cat_id}`} className="ready-evolve-card">
                 <img 
-                  src={`${IMAGE_BASE_URL}${cat.image_url}`} 
+                  src={`${BASE_URL}/units/${cat.image_url}`} 
                   alt={cat.next_form_name} 
                   className="ready-evolve-icon"
                   loading="lazy"

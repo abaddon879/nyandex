@@ -1,6 +1,7 @@
 import React from 'react';
 
-const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function EvolutionMaterialsWidget({ data }) {
   // Helper to categorize items based on the API 'item_type'
@@ -32,7 +33,7 @@ function EvolutionMaterialsWidget({ data }) {
                 {items.map((item, index) => (
                   <div key={index} className={`material-cell ${getBgClass(item.item_quantity)}`} title={item.item_name}>
                     <img 
-                      src={`${IMAGE_BASE_URL}${item.image_url}`} 
+                      src={`${BASE_URL}/items/${item.image_url}`} 
                       alt={item.item_name} 
                       className="material-icon"
                       loading="lazy"
