@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { catService } from '../../api/catService';
 import { userTrackerService } from '../../api/userTrackerService';
 import { authStore } from '../../stores/authStore';
 import BaseButton from '../base/BaseButton.jsx';
-import './QuickEvoView.css'; // <-- Imports the CSS
+import './QuickEvoView.css';
 
 const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 
-// Placeholder - we still need the real formulas
 const StatCalculator = {
   getFinalStats: (stats, level, plus) => {
     if (!stats) return { health: 1, attack_power: 1, dps: 1 };
     const totalLevel = level + plus;
-    const calculatedHealth = (stats.health * (1 + totalLevel * 0.1)); // Pure placeholder logic
-    const calculatedAttack = (stats.attack_power * (1 + totalLevel * 0.1)); // Pure placeholder logic
+    const calculatedHealth = (stats.health * (1 + (totalLevel - 1) * 0.2)); 
+    const calculatedAttack = (stats.attack_power * (1 + (totalLevel - 1) * 0.2)); 
     return {
         health: Math.floor(calculatedHealth),
         attack_power: Math.floor(calculatedAttack),
@@ -22,34 +22,34 @@ const StatCalculator = {
   }
 };
 
-function QuickEvoView({ catId, userMap }) {
+function QuickEvoView({ catId, userMap, onDataChange }) {
   const { userId } = authStore.getState();
 
   const [staticData, setStaticData] = useState(null);
   const [inventoryMap, setInventoryMap] = useState(new Map());
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const userProgress = useMemo(() => userMap.get(catId) || null, [catId, userMap]);
-
-  const [level, setLevel] = useState(userProgress?.level || 1);
-  const [plusLevel, setPlusLevel] = useState(userProgress?.plus_level || 0);
-  const [formId, setFormId] = useState(userProgress?.form_id || null);
+  const [level, setLevel] = useState(1);
+  const [plusLevel, setPlusLevel] = useState(0);
+  const [formId, setFormId] = useState(null);
   const [isPinned, setIsPinned] = useState(false);
 
-  // --- Data Fetching ---
+  // --- 1. Data Fetching ---
   const fetchData = useCallback(async () => {
-    if (!catId || !userId) {
+    if (catId === null || catId === undefined || !userId) {
       setStaticData(null);
-      setIsLoading(false);
       return;
     }
     setIsLoading(true);
     setError(null);
     try {
-      const [catDetails, inventory] = await Promise.all([
+      console.log(`[QuickEvoView] Fetching Cat ${catId}...`);
+      const [catDetails, inventory, userCatProgress] = await Promise.all([
         catService.getCatDetails(catId),
-        userTrackerService.getUserInventory(userId)
+        userTrackerService.getUserInventory(userId),
+        userTrackerService.getSingleCatProgress(userId, catId).catch(() => null)
       ]);
       
       const invMap = new Map();
@@ -58,88 +58,170 @@ function QuickEvoView({ catId, userMap }) {
       setStaticData(catDetails);
       setInventoryMap(invMap);
 
-      const currentProgress = userMap.get(catId) || {};
-      setLevel(currentProgress.level || 1);
-      setPlusLevel(currentProgress.plus_level || 0);
-      
-      const firstFormId = catDetails.forms[0]?.form_id;
-      const savedFormIsValid = catDetails.forms.some(f => f.form_id === currentProgress.form_id);
-      setFormId(savedFormIsValid ? currentProgress.form_id : firstFormId);
-      
-      try {
-        const userCat = await userTrackerService.getSingleCatProgress(userId, catId);
-        setIsPinned(userCat.is_pinned || false);
-      } catch (userError) {
+      // Default to 1st form if available, else 1
+      const defaultFormId = (catDetails.forms && catDetails.forms.length > 0) 
+        ? catDetails.forms[0].form_id 
+        : 1;
+
+      if (userCatProgress && !userCatProgress.error) {
+        setLevel(userCatProgress.level || 1);
+        setPlusLevel(userCatProgress.plus_level || 0);
+        setFormId(userCatProgress.form_id || defaultFormId);
+        // Robust check for pinned status
+        const pinnedVal = userCatProgress.is_pinned;
+        setIsPinned(pinnedVal === true || Number(pinnedVal) === 1);
+      } else {
+        setLevel(1);
+        setPlusLevel(0);
+        setFormId(defaultFormId);
         setIsPinned(false);
       }
+
     } catch (err) {
-      setError(err.message);
+      console.error(err);
+      setError("Failed to load cat data.");
     } finally {
       setIsLoading(false);
     }
-  }, [catId, userId, userMap]);
+  }, [catId, userId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // --- 2. Handlers ---
+
+  const handleFormClick = (form) => {
+    setFormId(form.form_id);
+    if (form.evolution && form.evolution.required_level) {
+      const minLvl = form.evolution.required_level;
+      if ((level + plusLevel) < minLvl) {
+        setLevel(minLvl - plusLevel > 0 ? minLvl - plusLevel : 1);
+      }
+    }
+  };
+
+  const handleSaveProgress = async () => {
+    if (!userId || (catId === null && catId !== 0)) return;
+    setIsSaving(true);
+    try {
+      await userTrackerService.saveCatProgress(userId, catId, {
+        level,
+        plus_level: plusLevel,
+        form_id: formId
+      });
+      if (onDataChange) onDataChange(); 
+    } catch (err) {
+      alert(`Save failed: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleTogglePin = async () => {
+    if (!userId || (catId === null && catId !== 0)) return;
+    try {
+      if (isPinned) {
+        await userTrackerService.unpinCat(userId, catId);
+        setIsPinned(false);
+      } else {
+        await userTrackerService.pinCat(userId, catId);
+        setIsPinned(true);
+      }
+      // Toggle local state immediately for responsiveness
+      setIsPinned(!isPinned);
+    } catch (err) {
+      alert(`Failed to update pin: ${err.message}`);
+    }
+  };
   
-  const handleSaveProgress = async () => { /* ... (implementation) ... */ };
-  const handleTogglePin = async () => { /* ... (implementation) ... */ };
-  
+  // --- 3. Computed Values (ROBUST) ---
+
   const currentForm = useMemo(() => {
     if (!staticData) return null;
-    return staticData.forms.find(f => f.form_id === formId);
+    
+    // Handle Missing Forms Array
+    if (!staticData.forms || staticData.forms.length === 0) {
+        console.warn("[QuickEvoView] No forms found for this cat. Using placeholder.");
+        return {
+            form_id: 1,
+            form_name: "Basic Form (No Data)",
+            generic_form_name: "Normal",
+            image_url: "", // Placeholder image or empty
+            stats: null
+        };
+    }
+
+    // Normal lookup
+    const found = staticData.forms.find(f => f.form_id == formId);
+    return found || staticData.forms[0];
   }, [staticData, formId]);
 
   const nextForm = useMemo(() => {
-    if (!staticData) return null;
-    const currentIndex = staticData.forms.findIndex(f => f.form_id === formId);
+    if (!staticData || !staticData.forms || !currentForm) return null;
+    const currentIndex = staticData.forms.findIndex(f => f.form_id === currentForm.form_id);
+    if (currentIndex === -1) return null;
     return staticData.forms[currentIndex + 1] || null;
-  }, [staticData, formId]);
+  }, [staticData, currentForm]);
 
   const calculatedStats = useMemo(() => {
-    if (!currentForm) return null;
+    if (!currentForm || !currentForm.stats) return null;
     return StatCalculator.getFinalStats(
       currentForm.stats, 
       level, 
-      plusLevel, 
-      staticData.boostable
+      plusLevel
     );
-  }, [currentForm, level, plusLevel, staticData]);
+  }, [currentForm, level, plusLevel]);
 
 
-  if (!catId) {
+  // --- 4. Render ---
+
+  if (catId === null || catId === undefined) {
     return (
-      <div className="quick-evo-view" style={{ textAlign: 'center' }}>
-        <p className="text-secondary" style={{ paddingTop: '2rem' }}>[Icon] Select a cat to view its evolution and progress.</p>
+      <div className="quick-evo-view" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--color-border)' }}>🐈</div>
+        <p className="text-secondary">Select a cat to view its evolution and progress.</p>
       </div>
     );
   }
 
   if (isLoading) return <div className="quick-evo-view">Loading...</div>;
-  if (error) return <div className="quick-evo-view" style={{ color: 'red' }}>Error: {error}</div>;
-  if (!currentForm) return <div className="quick-evo-view">Error: Cat form data not found.</div>;
+  if (error) return <div className="quick-evo-view" style={{ color: 'red' }}>{error}</div>;
+  if (!staticData || !currentForm) return <div className="quick-evo-view">Data missing.</div>;
+
+  const displayId = (staticData.cat_order_id !== undefined && staticData.cat_order_id !== null) 
+    ? staticData.cat_order_id 
+    : staticData.cat_id;
 
   return (
     <aside className="quick-evo-view">
-      
-      {/* 1. User Progress Card (Spec 7.6) */}
       <div className="quick-evo-card">
         <div className="quick-evo-header">
-          <h3 className="quick-evo-title">{currentForm.form_name}</h3>
-          <BaseButton onClick={handleTogglePin} variant="secondary">
-            {isPinned ? '[📌]' : '[Track]'}
+          <div>
+             <h3 className="quick-evo-title">{currentForm.form_name}</h3>
+             <span className="text-secondary" style={{ fontSize: '0.8rem' }}>
+                ID: #{displayId}
+             </span>
+          </div>
+          <BaseButton 
+            onClick={handleTogglePin} 
+            variant={isPinned ? "primary" : "secondary"}
+            title="Track this cat on Dashboard"
+            style={{ padding: '4px 8px' }}
+          >
+            {isPinned ? '📌 Pinned' : '📌 Track'}
           </BaseButton>
         </div>
+        
         <div className="quick-evo-body">
-          <p className="text-secondary" style={{ marginTop: 0 }}>ID: #{staticData.cat_id}</p>
-
           <div className="input-group">
             <div className="input-group-item">
               <label>Level</label>
               <input 
                 className="form-input" 
                 type="number" 
+                min="1"
+                max={staticData.max_level}
                 value={level} 
                 onChange={(e) => setLevel(parseInt(e.target.value) || 1)} 
               />
@@ -149,61 +231,80 @@ function QuickEvoView({ catId, userMap }) {
               <input 
                 className="form-input" 
                 type="number" 
+                min="0"
+                max={staticData.max_plus_level}
                 value={plusLevel} 
                 onChange={(e) => setPlusLevel(parseInt(e.target.value) || 0)} 
               />
             </div>
           </div>
           
-          {/* This is the Evolution Tree (Spec 7.6) */}
-          <div className="form-icon-group">
-            {staticData.forms.map((form, index) => (
-              <React.Fragment key={form.form_id}>
-                {/* Add a connector (>) before every icon except the first one */}
-                {index > 0 && <span className="form-icon-connector">{'>'}</span>}
-                
-                <div className="form-icon-item">
-                  <button
-                    onClick={() => setFormId(form.form_id)}
-                    className={`form-icon-btn ${form.form_id === formId ? 'is-active' : ''}`}
-                    title={form.form_name}
-                  >
-                    <img src={IMAGE_BASE_URL + form.image_url} alt={form.form_name} loading="lazy" />
-                  </button>
-                  {/* This line renders the "Normal", "Evolved", "True" text */}
-                  <span className="form-icon-name">{form.generic_form_name}</span>
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
+          {/* Only render form icons if we actually have forms */}
+          {staticData.forms && staticData.forms.length > 0 ? (
+            <div className="form-icon-group">
+                {staticData.forms.map((form, index) => (
+                <React.Fragment key={form.form_id}>
+                    {index > 0 && <span className="form-icon-connector">›</span>}
+                    <div className="form-icon-item">
+                    <button
+                        onClick={() => handleFormClick(form)}
+                        className={`form-icon-btn ${form.form_id == formId ? 'is-active' : ''}`}
+                        title={form.form_name}
+                    >
+                        <img src={IMAGE_BASE_URL + form.image_url} alt={form.form_name} loading="lazy" />
+                    </button>
+                    <span className="form-icon-name">{form.generic_form_name}</span>
+                    </div>
+                </React.Fragment>
+                ))}
+            </div>
+          ) : (
+            <div className="text-secondary" style={{ padding: '1rem', textAlign: 'center', fontSize: '0.85rem' }}>
+                [No evolution data available]
+            </div>
+          )}
           
-          <BaseButton onClick={handleSaveProgress} variant="primary" style={{ width: '100%', marginTop: '1rem' }}>
-            Save Progress
+          <BaseButton 
+            onClick={handleSaveProgress} 
+            variant="primary" 
+            disabled={isSaving}
+            style={{ width: '100%', marginTop: '1rem' }}
+          >
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </BaseButton>
         </div>
       </div>
-      
-      {/* 2. Evolution Requirements Card (Spec 7.6) */}
+
       {nextForm ? (
         <div className="quick-evo-card">
           <div className="quick-evo-header">
-            <h3 className="quick-evo-title">Evolve to {nextForm.form_name}</h3>
+            <h3 className="quick-evo-title" style={{fontSize: '1rem'}}>Next: {nextForm.form_name}</h3>
           </div>
           <div className="quick-evo-body requirements-list">
-            <p className="requirement-item">
-              Requires Level: {nextForm.evolution.required_level}
-            </p>
-            <p className="requirement-item">
-              Requires XP: {nextForm.evolution.required_xp.toLocaleString()}
-            </p>
-            
+             {/* ... Requirements Logic ... */}
+             <div className={`requirement-item ${(level+plusLevel) >= nextForm.evolution.required_level ? 'is-complete' : 'is-missing'}`}>
+              <span style={{ width: '24px', textAlign: 'center' }}>Lvl</span> 
+              <span>Level {nextForm.evolution.required_level}</span>
+              {(level+plusLevel) >= nextForm.evolution.required_level && ' ✓'}
+            </div>
             {nextForm.evolution.requirements.map(req => {
               const userQty = inventoryMap.get(req.item_id) || 0;
               const isComplete = userQty >= req.item_qty;
-              
+              const percent = Math.min(100, (userQty / req.item_qty) * 100);
               return (
-                <div key={req.item_id} className={`requirement-item ${isComplete ? 'is-complete' : 'is-missing'}`}>
-                  [Icon] {req.item_id}: {userQty} / {req.item_qty}
+                <div key={req.item_id} style={{ marginTop: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span>Item #{req.item_id}</span>
+                    <span className={isComplete ? 'text-success' : 'text-secondary'}>
+                        {userQty} / {req.item_qty}
+                    </span>
+                  </div>
+                  <div className="progress-track" style={{ height: '6px', marginTop: '2px' }}>
+                      <div className="progress-fill" style={{ 
+                          width: `${percent}%`, 
+                          backgroundColor: isComplete ? 'var(--color-accent-success)' : 'var(--color-accent-info)'
+                      }}></div>
+                  </div>
                 </div>
               );
             })}
@@ -211,25 +312,38 @@ function QuickEvoView({ catId, userMap }) {
         </div>
       ) : (
          <div className="quick-evo-card">
-          <div className="quick-evo-body requirements-list">
-            <p className="text-secondary">This is the final form.</p>
+          <div className="quick-evo-body">
+            <p className="text-success" style={{ textAlign: 'center', margin: 0 }}>
+                {staticData.forms && staticData.forms.length > 0 ? "Max Evolution Reached!" : "No Evolution Data"}
+            </p>
           </div>
         </div>
       )}
       
-      {/* 3. Calculated Stats Card (Spec 7.6) */}
       {calculatedStats && (
         <div className="quick-evo-card">
           <div className="quick-evo-header">
-            <h3 className="quick-evo-title">Calculated Stats (Lvl {level}+{plusLevel})</h3>
+            <h3 className="quick-evo-title" style={{fontSize: '1rem'}}>Stats (Preview)</h3>
           </div>
-          <div className="quick-evo-body">
-            <p>Health: {calculatedStats.health.toLocaleString()}</p>
-            <p>Attack: {calculatedStats.attack_power.toLocaleString()}</p>
-            <p>DPS: {calculatedStats.dps.toLocaleString()}</p>
+          <div className="quick-evo-body" style={{ fontSize: '0.9rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span>HP:</span> <strong>{calculatedStats.health.toLocaleString()}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span>Attack:</span> <strong>{calculatedStats.attack_power.toLocaleString()}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>DPS:</span> <strong>{calculatedStats.dps.toLocaleString()}</strong>
+            </div>
           </div>
         </div>
       )}
+
+      <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+        <Link to={`/detail/${catId}`} className="btn btn-secondary" style={{ width: '100%', display: 'block' }}>
+            View Full Details ➔
+        </Link>
+      </div>
       
     </aside>
   );

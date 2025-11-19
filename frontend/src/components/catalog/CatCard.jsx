@@ -1,16 +1,23 @@
 import React from 'react';
 import './CatCard.css';
 
-// Get the base URL from the .env file
 const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 
 function CatCard({ cat, userProgress, mode, onClick, onCheckboxToggle, isSelected }) {
     
-    const primaryForm = cat.forms.find(f => f.form_id === 1) || cat.forms[0];
     const isOwned = !!userProgress;
     
-    // Construct the full image path
-    const iconUrl = IMAGE_BASE_URL + primaryForm?.icon_url;
+    let displayedForm = null;
+    if (isOwned && userProgress.form_id) {
+        // [FIX] Use loose equality (==) to handle string vs int mismatch
+        displayedForm = cat.forms.find(f => f.form_id == userProgress.form_id);
+    }
+    
+    if (!displayedForm) {
+        displayedForm = cat.forms.find(f => f.form_id == 1) || cat.forms[0];
+    }
+    
+    const iconUrl = IMAGE_BASE_URL + displayedForm?.icon_url;
 
     const cardClass = [
         'cat-card',
@@ -34,14 +41,14 @@ function CatCard({ cat, userProgress, mode, onClick, onCheckboxToggle, isSelecte
             )}
             
             <img 
-                src={iconUrl} // <-- USE THE FULL URL
-                alt={primaryForm?.form_name} 
+                src={iconUrl} 
+                alt={displayedForm?.form_name} 
                 loading="lazy" 
                 className="cat-card-icon"
             />
 
             <div className="cat-card-info">
-                <span className="cat-card-name">{primaryForm?.form_name}</span>
+                <span className="cat-card-name">{displayedForm?.form_name}</span>
                 {isOwned && (
                     <span className="cat-card-level">
                         Lvl: {userProgress.level}+{userProgress.plus_level}

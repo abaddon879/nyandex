@@ -1,5 +1,5 @@
 -- This script transforms data from the temporary tables (loaded from CSVs)
--- and inserts it into the final, permanent tables as defined in your db_setup.sql.
+-- and inserts it into the final, permanent tables.
 START TRANSACTION;
 
 -- =================================================================================
@@ -13,7 +13,7 @@ SELECT
     ub.col_50 AS boostable,
     ub.col_51 AS max_level,
     ub.col_52 AS max_plus_level,
-    '{{VERSION}}' AS introduced_version_id -- Add the placeholder to the SELECT list
+    '{{VERSION}}' AS introduced_version_id 
 
 FROM
     (SELECT *, (ROW_NUMBER() OVER (ORDER BY id) - 1) AS cat_id FROM temp_unit_evolutions) AS ub
@@ -37,11 +37,11 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO cat_form (cat_id, form_id, form_name, description, required_level, required_xp, egg_id, image_url, introduced_version_id)
 SELECT
     ub.cat_id,
-    ex.col_2 as form_id, -- Assuming col_2 in unit_explanations is the form_id
-    ex.col_3 as form_name, -- Assuming col_3 is the name
+    ex.col_2 as form_id, 
+    ex.col_3 as form_name,
     CONCAT_WS(
-        CHAR(13, 10), -- The separator is a newline character
-        NULLIF(ex.col_4, ''), -- Convert empty strings to NULL so CONCAT_WS skips them
+        CHAR(13, 10), 
+        NULLIF(ex.col_4, ''), 
         NULLIF(ex.col_5, ''),
         NULLIF(ex.col_6, ''),
         NULLIF(ex.col_7, ''),
@@ -87,7 +87,8 @@ JOIN
     (SELECT *, (ROW_NUMBER() OVER (ORDER BY id) - 1) AS cat_id FROM temp_picture_book_data) AS pb
     ON ub.cat_id = pb.cat_id
 JOIN
-    temp_unit_explanations ex ON ub.cat_id = (ex.col_1 - 1)-- Query the temporary table
+    -- Using (ex.col_1 - 1) to align 1-based CSV with 0-based DB
+    temp_unit_explanations ex ON ub.cat_id = (ex.col_1 - 1)
 WHERE
     pb.col_1 > 0
 AND ex.col_2 <= pb.col_3
@@ -166,13 +167,6 @@ ON DUPLICATE KEY UPDATE
 -- =================================================================================
 -- Step 4: Populate the `cat_form_stat` table
 -- =================================================================================
--- Purpose: Extracts the Level 1 base stats from the raw unit data file
---          and inserts them into the normalized stats table.
--- Source:  temp_unit_evolutions (loaded from units.csv)
--- Target:  cat_form_stat
-
-
-
 INSERT INTO cat_form_stat (
     cat_id,
     form_id,
@@ -190,13 +184,9 @@ INSERT INTO cat_form_stat (
     hit_count
 )
 SELECT
-    -- col_0 and col_1 are the cat_id and form_id added by CsvMergeController
-    -- FIX: Column index shifted from col_0 -> col_1, col_1 -> col_2, etc.
-    (CAST(us.col_1 AS UNSIGNED) -1) AS cat_id,
-    CAST(us.col_2 AS UNSIGNED) AS form_id,
+    (CAST(us.col_1 AS UNSIGNED) - 1) AS cat_id,
     
-    -- Stat Mapping based on units.csv inspection
-    -- FIX: All column indexes shifted +1
+    CAST(us.col_2 AS UNSIGNED) AS form_id,
     CAST(us.col_3 AS SIGNED) AS health,
     CAST(us.col_4 AS SIGNED) AS knockbacks,
     CAST(us.col_5 AS SIGNED) AS move_speed,
@@ -208,20 +198,18 @@ SELECT
     CAST(us.col_10 AS SIGNED) AS recharge_time_f,
     CAST(us.col_9 AS SIGNED) AS cost,
     CAST(us.col_15 AS UNSIGNED) AS attack_type,
-    
-    -- ASSUMPTION: hit_count is 1. 
     1 AS hit_count
 
 FROM
     temp_unit_stats AS us
 WHERE
-    -- Ensure the cat_id exists in our main `cat` table
-    (CAST(us.col_1 AS UNSIGNED) - 1) IN (SELECT cat_id FROM cat)
-    
-    -- Ensure the form_id is a valid form for that cat
-    AND us.col_2 IN (SELECT form_id FROM cat_form WHERE cat_form.cat_id = us.col_1)
-
--- On duplicate, update all stats to the new version's values
+    -- [FIX] Ensure we only insert stats if the (cat_id, form_id) pair
+    -- actually exists in the parent cat_form table.
+    EXISTS (
+        SELECT 1 FROM cat_form 
+        WHERE cat_form.cat_id = (CAST(us.col_1 AS UNSIGNED) - 1)
+          AND cat_form.form_id = CAST(us.col_2 AS UNSIGNED)
+    )
 ON DUPLICATE KEY UPDATE
     health = VALUES(health),
     knockbacks = VALUES(knockbacks),

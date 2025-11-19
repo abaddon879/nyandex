@@ -14,7 +14,7 @@ class RequireAdmin
         $authenticatedUser = $request->getAttribute('user');
 
         // --- FIXED: Use array syntax ---
-        if ($authenticatedUser === null || !isset($authenticatedUser['is_admin']) || $authenticatedUser['is_admin'] != true) {
+        if ($authenticatedUser === null || !isset($authenticatedUser['admin']) || $authenticatedUser['admin'] != true) {
             // User is not an admin or not logged in
             throw new \Slim\Exception\HttpForbiddenException($request, 'Administrator access required.');
         }

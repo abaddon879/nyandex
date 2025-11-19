@@ -12,7 +12,6 @@ class UserCatRepository
     {
     }
 
-    // ... (findByUser, findByUserAndCat, upsert, delete methods are all correct) ...
     public function findByUser(int $user_id): array
     {
         $sql = "SELECT cat_id, `level`, plus_level, form_id, notes
@@ -26,17 +25,45 @@ class UserCatRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function findByUserAndCat(int $user_id, int $cat_id): array|false
+    /**
+     * [FIXED] Fetches user data and pinned status separately to ensure accuracy.
+     */
+    public function findByUserAndCat(int $user_id, int $cat_id): array
     {
-        $sql = "SELECT cat_id, `level`, plus_level, form_id, notes
-                FROM user_cat
-                WHERE user_id = :user_id AND cat_id = :cat_id";
-        
         $pdo = $this->database->getConnection();
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute(['user_id' => $user_id, 'cat_id' => $cat_id]);
-        
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // 1. Try to fetch the user's progress for this cat
+        $sqlCat = "SELECT cat_id, `level`, plus_level, form_id, notes 
+                   FROM user_cat 
+                   WHERE user_id = :user_id AND cat_id = :cat_id";
+        $stmtCat = $pdo->prepare($sqlCat);
+        $stmtCat->execute(['user_id' => $user_id, 'cat_id' => $cat_id]);
+        $catData = $stmtCat->fetch(PDO::FETCH_ASSOC);
+
+        // 2. Check if the cat is pinned (Separate query is safer/faster here)
+        $sqlPin = "SELECT COUNT(*) FROM user_pinned_cat WHERE user_id = :user_id AND cat_id = :cat_id";
+        $stmtPin = $pdo->prepare($sqlPin);
+        $stmtPin->execute(['user_id' => $user_id, 'cat_id' => $cat_id]);
+        $isPinned = (bool)$stmtPin->fetchColumn();
+
+        // 3. Build the result
+        if ($catData) {
+            // User owns the cat
+            $catData['is_owned'] = true;
+            $catData['is_pinned'] = $isPinned;
+            return $catData;
+        } else {
+            // User does NOT own the cat, but we return the pinned status
+            return [
+                'cat_id' => $cat_id,
+                'level' => 0,
+                'plus_level' => 0,
+                'form_id' => 0,
+                'notes' => null,
+                'is_owned' => false,
+                'is_pinned' => $isPinned
+            ];
+        }
     }
 
     public function upsert(array $data): bool
@@ -73,18 +100,10 @@ class UserCatRepository
         return $stmt->execute(['user_id' => $user_id, 'cat_id' => $cat_id]);
     }
     
-    /**
-     * [IMPROVED METHOD]
-     * Processes an array of actions and returns the total number of affected rows.
-     *
-     * @param int $user_id The user's ID.
-     * @param array $actions A list of action objects.
-     * @return int|false The total number of affected rows, or false on failure.
-     */
     public function bulkUpdate(int $user_id, array $actions): int|false
     {
         $pdo = $this->database->getConnection();
-        $totalAffectedRows = 0; // [NEW] Initialize counter
+        $totalAffectedRows = 0;
 
         try {
             $pdo->beginTransaction();
@@ -110,7 +129,7 @@ class UserCatRepository
                             'cat_id' => $cat_id,
                             'form_id' => $first_form_id
                         ]);
-                        $totalAffectedRows += $stmt->rowCount(); // [NEW] Add affected rows
+                        $totalAffectedRows += $stmt->rowCount();
                     }
                 
                 } else {
@@ -125,7 +144,7 @@ class UserCatRepository
                             $params = array_merge([$action['level'], $action['plus_level'], $user_id], $action['cat_ids']);
                             $stmt = $pdo->prepare($sql);
                             $stmt->execute($params);
-                            $totalAffectedRows += $stmt->rowCount(); // [NEW] Add affected rows
+                            $totalAffectedRows += $stmt->rowCount();
                             break;
 
                         case 'set_form':
@@ -136,18 +155,18 @@ class UserCatRepository
                             $params = array_merge([$action['form_id'], $user_id], $action['cat_ids']);
                             $stmt = $pdo->prepare($sql);
                             $stmt->execute($params);
-                            $totalAffectedRows += $stmt->rowCount(); // [NEW] Add affected rows
+                            $totalAffectedRows += $stmt->rowCount();
                             break;
                     }
                 }
             }
 
             $pdo->commit();
-            return $totalAffectedRows; // [NEW] Return the total count
+            return $totalAffectedRows;
 
         } catch (\Exception $e) {
             $pdo->rollBack();
-            error_log($e->getMessage()); // Good to log the actual error
+            error_log($e->getMessage());
             return false;
         }
     }

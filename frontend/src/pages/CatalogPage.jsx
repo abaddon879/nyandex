@@ -7,7 +7,7 @@ import CatalogTopBar from '../components/catalog/CatalogTopBar.jsx';
 import CatGallery from '../components/catalog/CatGallery.jsx';
 import QuickEvoView from '../components/catalog/QuickEvoView.jsx';
 import BulkActionFooter from '../components/catalog/BulkActionFooter.jsx';
-import './CatalogPage.css'; // <-- Imports the stylesheet
+import './CatalogPage.css';
 
 function CatalogPage() {
   const [userId, setUserId] = useState(authStore.getState().userId);
@@ -24,7 +24,8 @@ function CatalogPage() {
 
   const fetchPageData = useCallback(async () => {
     if (!userId) return;
-    setIsLoading(true);
+    // Don't set full page loading on refresh, only initial
+    if (masterCatList.length === 0) setIsLoading(true);
     setError(null);
     try {
       const [staticCats, userCats, dashboardData] = await Promise.all([
@@ -35,6 +36,7 @@ function CatalogPage() {
       const progressMap = new Map();
       userCats.forEach(cat => progressMap.set(cat.cat_id, cat));
       const readyIds = new Set(dashboardData.ready_to_evolve.map(cat => cat.cat_id));
+      
       setMasterCatList(staticCats);
       setUserCatMap(progressMap);
       setReadyToEvolveIds(readyIds);
@@ -43,7 +45,7 @@ function CatalogPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId]); // Removed masterCatList from dependency to prevent loops
 
   useEffect(() => {
     const unsubscribe = authStore.subscribe(state => setUserId(state.userId));
@@ -62,7 +64,7 @@ function CatalogPage() {
     );
   }, [masterCatList, userCatMap, readyToEvolveIds, filters, sort]);
   
-  if (isLoading) return <div>Loading Catalog...</div>;
+  if (isLoading && masterCatList.length === 0) return <div>Loading Catalog...</div>;
   if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
 
   return (
@@ -92,6 +94,7 @@ function CatalogPage() {
             key={selectedCatId}
             catId={selectedCatId}
             userMap={userCatMap}
+            onDataChange={fetchPageData} // [FIX] Pass the refresh function
           />
         </aside>
       </div>
