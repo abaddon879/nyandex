@@ -57,6 +57,8 @@ $app->group('/api', function(RouteCollectorProxy $group) {
     // --- STATIC DATA ---
     $group->get('/cats', [Cats::class, 'index']); // 3.1
     $group->get('/items', [Items::class, 'index']);
+
+    $group->get('/versions/latest', [Versions::class, 'latest']);
     
     // 3.3 & 5.1 Fetch Detailed Static Cat Data
     $group->group('/cats/{cat_id:[0-9]+}', function(RouteCollectorProxy $group) {
@@ -111,7 +113,6 @@ $app->group('/api', function(RouteCollectorProxy $group) {
         $group->get('/versions', [Versions::class, 'index']);
         $group->post('/versions', [Versions::class, 'create']);
         $group->patch('/versions/{version_id}', [Versions::class, 'update']);
-        $group->get('/versions/latest', [Versions::class, 'latest']);
         // ... (all other version routes) ...
     })->add(RequireAdmin::class);
 
