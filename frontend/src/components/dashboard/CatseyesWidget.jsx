@@ -6,7 +6,9 @@ const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 function CatseyesWidget({ data }) {
   return (
     <div className="widget-card widget-catseyes">
-      <h3 className="widget-card-title">Catseyes</h3>
+      <div className="widget-header">
+        <h3 className="widget-card-title">Catseyes</h3>
+      </div>
       
       <div className="material-grid">
         {data.map((item, index) => (
