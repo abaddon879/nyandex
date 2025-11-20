@@ -10,11 +10,12 @@ function ReadyToEvolveWidget({ data }) {
   const totalCount = data.length;
 
   const getRarityClass = (rarityId) => {
-    if (rarityId === 5) return 'border-legend'; // [NEW] Purple
-    if (rarityId === 4) return 'border-uber';   // Gold
-    if (rarityId === 3) return 'border-super';  // Blue
-    if (rarityId === 2) return 'border-rare';   // Red
-    return 'border-normal';                     // Grey (Normal/Special)
+    if (rarityId === 5) return 'border-legend'; 
+    if (rarityId === 4) return 'border-uber';   
+    if (rarityId === 3) return 'border-super';  
+    if (rarityId === 2) return 'border-rare';   
+    if (rarityId === 1) return 'border-special';  
+    return 'border-normal';                     
   };
 
   return (

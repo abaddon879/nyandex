@@ -184,12 +184,16 @@
 .view-more { justify-content: center; color: #3b82f6; font-weight: 700; background: #f0f9ff; border-color: #bae6fd; }
 
 /* Rarity Borders */
-.border-legend { border-bottom: 3px solid #d946ef; }
-.border-uber { border-bottom: 3px solid #facc15; }
-.border-super { border-bottom: 3px solid #60a5fa; }
-.border-rare { border-bottom: 3px solid #f87171; }
-.border-special { border-bottom: 3px solid #fb923c; }
-.border-normal { border-bottom: 3px solid #cbd5e1; }
+.border-legend { 
+  border-bottom-width: 3px;
+  border-bottom-style: solid;
+  border-image: linear-gradient(to right, #ff6b6b, #feca57, #48dbfb, #ff9ff3) 1;
+}
+.border-uber { border-bottom: 3px solid #f9ca24; }
+.border-super { border-bottom: 3px solid #4834d4; }
+.border-rare { border-bottom: 3px solid #f0932b; }
+.border-special { border-bottom: 3px solid #e056fd; }
+.border-normal { border-bottom: 3px solid #94a3b8; }
 
 
 /* Rarity Legend */
@@ -198,10 +202,9 @@
   margin-top: auto; 
   padding-top: 12px;
   border-top: 1px solid #f1f5f9;
-  
   display: flex;
-  gap: 12px;
-  font-size: 0.65rem;
+  gap: 6px;
+  font-size: 0.6rem;
   color: #94a3b8;
   font-weight: 600;
   text-transform: uppercase;
@@ -211,12 +214,12 @@
 }
 .legend-item { display: flex; alignItems: center; gap: 3px; }
 .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
-.dot.legend { background: #fdf4ff; border: 1px solid #d946ef; }
-.dot.uber { background: #fef9c3; border: 1px solid #facc15; }
-.dot.super { background: #dbeafe; border: 1px solid #60a5fa; }
-.dot.rare { background: #fee2e2; border: 1px solid #f87171; }
-.dot.special { background: #ffedd5; border: 1px solid #fb923c; }
-.dot.normal { background: #f8fafc; border: 1px solid #94a3b8; }
+.dot.legend { background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3); }
+.dot.uber   { background: #f9ca24; } 
+.dot.super  { background: #4834d4; } 
+.dot.rare   { background: #f0932b; } 
+.dot.special{ background: #e056fd; } 
+.dot.normal { background: #94a3b8; }
 
 /* --- XP TRACKER --- */
 .xp-stat-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #e2e8f0; }
