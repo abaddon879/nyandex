@@ -12,21 +12,18 @@ const COLOR_ORDER = [
 
 function EvolutionMaterialsWidget({ data }) {
   
-  // --- 1. CLEAN Categorization (Using your new DB Types!) ---
+  // --- 1. CLEAN Categorization ---
   const categorize = (item) => {
     switch (item.item_type) {
         case 'Catseed':
         case 'Catfruit':
             return 'catfruit';
-        
         case 'Behemoth Stone':
         case 'Behemoth Gem':
             return 'behemoth';
-            
         case 'Material':
         case 'Material Z':
             return 'building';
-            
         default:
             return 'other';
     }
@@ -53,7 +50,6 @@ function EvolutionMaterialsWidget({ data }) {
 
   const sortById = (a, b) => parseInt(a.item_id) - parseInt(b.item_id);
 
-
   // --- 3. Data Distribution ---
   const organization = {
     catfruit: { title: 'Catfruit', items: [] },
@@ -70,7 +66,6 @@ function EvolutionMaterialsWidget({ data }) {
     }
   });
 
-  // Apply Sorts
   organization.catfruit.items.sort(sortByColor);
   organization.behemoth.items.sort(sortByColor);
   organization.building.items.sort(sortById); 
@@ -79,7 +74,7 @@ function EvolutionMaterialsWidget({ data }) {
   // --- 4. Helpers ---
   const getBgClass = (qty) => {
     if (qty === 0) return 'bg-empty';
-    if (qty < 5) return 'bg-low';
+    // [FIX] Removed the 'bg-low' check. All items > 0 get standard styling.
     return '';
   };
 
@@ -127,6 +122,9 @@ function EvolutionMaterialsWidget({ data }) {
     );
   };
 
+  // --- 6. Final Render ---
+  const visibleGroups = Object.entries(organization).filter(([_, group]) => group.items.length > 0);
+
   return (
     <div className="widget-card widget-evolution-materials">
       <div className="widget-header">
@@ -134,14 +132,15 @@ function EvolutionMaterialsWidget({ data }) {
             <h3 className="widget-card-title">Materials</h3>
             <span className="widget-subtitle">Inventory Stock</span>
         </div>
+        {/* [FIX] Removed the Legend as it is no longer needed */}
       </div>
       
       <div className="materials-scroll-container custom-scrollbar">
-        {Object.entries(organization).map(([key, group]) => {
-          if (group.items.length === 0) return null;
+        {visibleGroups.map(([key, group], index) => {
+          const isLast = index === visibleGroups.length - 1;
 
           return (
-            <div key={key} style={{ marginBottom: '1.5rem' }}>
+            <div key={key} style={{ marginBottom: isLast ? 0 : '12px' }}>
               <div className="material-group-header">
                 <span>{group.title}</span>
                 <span style={{fontWeight:'400', fontSize:'0.9em', opacity: 0.7}}>{group.items.length}</span>

@@ -57,13 +57,6 @@ function DashboardPage() {
             {/* Show Banner only for Guest Users */}
             {isAnonymous && <UpgradeCTABanner />} 
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h1 style={{margin: 0}}>Dashboard</h1>
-                <button onClick={fetchDashboardData} disabled={isLoading} className="btn btn-secondary">
-                    {isLoading ? 'Refreshing...' : 'Refresh Data'}
-                </button>
-            </div>
-
             {isLoading && <DashboardSkeleton />} 
             {error && <div style={{ color: 'red' }}>Error: {error}</div>}
 
