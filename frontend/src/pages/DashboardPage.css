@@ -178,15 +178,45 @@
   text-decoration: none; background: #fff; border: 1px solid #f1f5f9;
   border-radius: 6px; padding: 6px; transition: transform 0.1s;
 }
-.ready-card:hover { transform: translateY(-2px); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-.ready-icon { width: 48px; height: 48px; object-fit: contain; margin-bottom: 4px; }
-.ready-name { font-size: 0.65rem; font-weight: 600; color: #475569; line-height: 1.1; height: 2.2em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ready-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+.ready-icon { width: 48px; height: 48px; object-fit: contain; margin-bottom: 6px; }
+.ready-name { font-size: 0.7rem; font-weight: 600; color: #475569; line-height: 1.2; height: 2.4em; overflow: hidden; }
 .view-more { justify-content: center; color: #3b82f6; font-weight: 700; background: #f0f9ff; border-color: #bae6fd; }
+
 /* Rarity Borders */
-.border-uber { border-bottom: 2px solid #facc15; }
-.border-super { border-bottom: 2px solid #60a5fa; }
-.border-rare { border-bottom: 2px solid #f87171; }
-.border-normal { border-bottom: 2px solid #e2e8f0; }
+.border-legend { border-bottom: 3px solid #d946ef; }
+.border-uber { border-bottom: 3px solid #facc15; }
+.border-super { border-bottom: 3px solid #60a5fa; }
+.border-rare { border-bottom: 3px solid #f87171; }
+.border-special { border-bottom: 3px solid #fb923c; }
+.border-normal { border-bottom: 3px solid #cbd5e1; }
+
+
+/* Rarity Legend */
+.rarity-legend {
+  /* Push to bottom of flex container */
+  margin-top: auto; 
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  
+  display: flex;
+  gap: 12px;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-wrap: wrap;
+  /* Center the legend for a balanced footer look */
+  justify-content: center; 
+}
+.legend-item { display: flex; alignItems: center; gap: 3px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.dot.legend { background: #fdf4ff; border: 1px solid #d946ef; }
+.dot.uber { background: #fef9c3; border: 1px solid #facc15; }
+.dot.super { background: #dbeafe; border: 1px solid #60a5fa; }
+.dot.rare { background: #fee2e2; border: 1px solid #f87171; }
+.dot.special { background: #ffedd5; border: 1px solid #fb923c; }
+.dot.normal { background: #f8fafc; border: 1px solid #94a3b8; }
 
 /* --- XP TRACKER --- */
 .xp-stat-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #e2e8f0; }
@@ -197,3 +227,8 @@
 .xp-deficit-box.surplus { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
 .xp-deficit-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; opacity: 0.8; }
 .xp-deficit-val { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
+
+/* --- UTILS --- */
+.empty-state {
+  text-align: center; padding: 2rem; color: #94a3b8; display: flex; flexDirection: column; alignItems: center; justify-content: center; height: 100%;
+}

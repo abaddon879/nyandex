@@ -10,22 +10,21 @@ function ReadyToEvolveWidget({ data }) {
   const totalCount = data.length;
 
   const getRarityClass = (rarityId) => {
-    if (rarityId >= 4) return 'border-uber'; // Gold
-    if (rarityId === 3) return 'border-super'; // Blue
-    if (rarityId === 2) return 'border-rare'; // Red
-    return 'border-normal';
+    if (rarityId === 5) return 'border-legend'; // [NEW] Purple
+    if (rarityId === 4) return 'border-uber';   // Gold
+    if (rarityId === 3) return 'border-super';  // Blue
+    if (rarityId === 2) return 'border-rare';   // Red
+    return 'border-normal';                     // Grey (Normal/Special)
   };
 
   return (
     <div className="widget-card widget-ready-to-evolve">
       <div className="widget-header">
         <div>
-            <h3 className="widget-card-title">Ready to Evolve</h3>
+            <h3 className="widget-card-title">Ready to Evolve ({totalCount})</h3>
             <span className="widget-subtitle">Requirements met</span>
         </div>
-        {totalCount > 0 && (
-            <span className="counter-badge success">{totalCount} Ready</span>
-        )}
+        
       </div>
 
       {totalCount === 0 ? (
@@ -39,6 +38,7 @@ function ReadyToEvolveWidget({ data }) {
               key={cat.cat_id} 
               to={`/detail/${cat.cat_id}`} 
               className={`ready-card ${getRarityClass(cat.rarity_id)}`}
+              title={`Evolve to ${cat.next_form_name}`}
             >
               <img 
                 src={`${BASE_URL}/units/${cat.image_url}`} 
@@ -57,6 +57,14 @@ function ReadyToEvolveWidget({ data }) {
           )}
         </div>
       )}
+      <div className="rarity-legend">
+            <div className="legend-item"><span className="dot normal"></span>Normal</div>
+            <div className="legend-item"><span className="dot special"></span>Special</div>
+            <div className="legend-item"><span className="dot rare"></span>Rare</div>
+            <div className="legend-item"><span className="dot super"></span>Super</div>
+            <div className="legend-item"><span className="dot uber"></span>Uber</div>
+            <div className="legend-item"><span className="dot legend"></span>Legend</div>
+        </div>
     </div>
   );
 }
