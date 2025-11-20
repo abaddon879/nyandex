@@ -56,7 +56,6 @@ function CatDetailPage() {
       // 3. Setup User State
       const defaultFormId = catDetails.forms[0]?.form_id || 1;
       
-      // Prepare the state values we want to set
       let nextLevel = 1;
       let nextPlus = 0;
       let nextForm = defaultFormId;
@@ -71,7 +70,6 @@ function CatDetailPage() {
         nextOwned = true;
       } 
       
-      // Apply state
       setLevel(nextLevel);
       setPlusLevel(nextPlus);
       setFormId(nextForm);
@@ -104,7 +102,6 @@ function CatDetailPage() {
   
   const isDirty = useMemo(() => {
     if (!originalState) return false;
-    // Check if current state differs from original state
     return (
       level !== originalState.level ||
       plusLevel !== originalState.plusLevel ||
@@ -113,7 +110,6 @@ function CatDetailPage() {
     );
   }, [level, plusLevel, formId, notes, originalState]);
 
-  // React Router v6.4+ / v7 Hook to block navigation
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname
@@ -146,7 +142,7 @@ function CatDetailPage() {
       
       setIsOwned(true);
       
-      // [NEW] Update original state to match the newly saved state so isDirty becomes false
+      // Update original state to match new saved state
       setOriginalState({
         level,
         plusLevel,
@@ -154,7 +150,7 @@ function CatDetailPage() {
         notes
       });
 
-      alert("Saved successfully!");
+      // Optional: Toast notification here
     } catch (err) {
       alert(err.message);
     } finally {
@@ -179,7 +175,6 @@ function CatDetailPage() {
 
   const currentForm = useMemo(() => {
     if (!staticData) return null;
-    // Loose equality for safety
     return staticData.forms.find(f => f.form_id == formId) || staticData.forms[0];
   }, [staticData, formId]);
 
@@ -191,9 +186,13 @@ function CatDetailPage() {
 
   // --- Render ---
 
-  if (isLoading) return <div className="page-loading" style={{padding: '2rem'}}>Loading Cat Details...</div>;
-  if (error) return <div className="page-error" style={{padding: '2rem', color: 'red'}}>{error}</div>;
-  if (!staticData) return <div className="page-error" style={{padding: '2rem'}}>Cat not found.</div>;
+  if (isLoading) return <div className="page-loading">Loading Cat Details...</div>;
+  if (error) return <div className="page-error">{error}</div>;
+  if (!staticData) return <div className="page-error">Cat not found.</div>;
+
+  // [NEW] Dynamic Max Values
+  const maxLevel = staticData.max_level || 50;
+  const maxPlus = staticData.max_plus_level || 0;
 
   return (
     <div className="cat-detail-page">
@@ -330,22 +329,32 @@ function CatDetailPage() {
             </div>
             
             <div className="control-group">
-                <label>Current Level</label>
+                <label>Current Level <small style={{fontWeight:'normal', color: '#666'}}>(Max: {maxLevel})</small></label>
                 <div className="level-inputs">
                     <input 
                         type="number" 
                         className="form-input"
                         value={level} 
-                        min="1" max="120"
-                        onChange={(e) => setLevel(Math.max(1, parseInt(e.target.value)||0))}
+                        min="1" 
+                        max={maxLevel} // [NEW]
+                        onChange={(e) => {
+                            // [NEW] Clamp value
+                            const val = parseInt(e.target.value) || 0;
+                            setLevel(Math.min(maxLevel, Math.max(1, val)));
+                        }}
                     />
                     <span className="plus-sign">+</span>
                     <input 
                         type="number" 
                         className="form-input"
                         value={plusLevel} 
-                        min="0" max="90"
-                        onChange={(e) => setPlusLevel(Math.max(0, parseInt(e.target.value)||0))}
+                        min="0" 
+                        max={maxPlus} // [NEW]
+                        onChange={(e) => {
+                            // [NEW] Clamp value
+                            const val = parseInt(e.target.value) || 0;
+                            setPlusLevel(Math.min(maxPlus, Math.max(0, val)));
+                        }}
                     />
                 </div>
             </div>
@@ -376,7 +385,7 @@ function CatDetailPage() {
             
             <div className="last-updated">
                {isOwned ? "Owned" : "Not in collection"}
-               {isDirty && <div style={{color:'var(--color-accent-destructive)', fontWeight:'bold', marginTop:'0.5rem'}}>● Unsaved Changes</div>}
+               {isDirty && <div style={{color: '#dc3545', marginTop: '5px', fontWeight: 'bold'}}>● Unsaved Changes</div>}
             </div>
         </div>
       </aside>

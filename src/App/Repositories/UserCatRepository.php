@@ -108,6 +108,7 @@ class UserCatRepository
         try {
             $pdo->beginTransaction();
 
+            // Prepare statement for finding the first form (used in set_owned)
             $firstFormStmt = $pdo->prepare("SELECT MIN(form_id) as first_form_id FROM cat_form WHERE cat_id = :cat_id");
 
             foreach ($actions as $action) {
@@ -133,16 +134,14 @@ class UserCatRepository
                         $totalAffectedRows += $stmt->rowCount();
                     }
                 
-                // 2. Mark as MISSING (Delete) - [NEW IMPLEMENTATION]
+                // 2. Mark as MISSING (Delete)
                 } elseif ($action['action'] === 'set_missing') {
                      if (empty($action['cat_ids'])) continue;
 
                      $placeholders = implode(',', array_fill(0, count($action['cat_ids']), '?'));
                      $sql = "DELETE FROM user_cat WHERE user_id = ? AND cat_id IN ($placeholders)";
                      
-                     // Merge user_id with the list of cat_ids
                      $params = array_merge([$user_id], $action['cat_ids']);
-                     
                      $stmt = $pdo->prepare($sql);
                      $stmt->execute($params);
                      $totalAffectedRows += $stmt->rowCount();
@@ -155,9 +154,16 @@ class UserCatRepository
 
                     switch ($action['action']) {
                         case 'set_level':
-                            $sql = "UPDATE user_cat 
-                                    SET `level` = ?, plus_level = ?, modified_at = CURRENT_TIMESTAMP
-                                    WHERE user_id = ? AND cat_id IN ($placeholders)";
+                            // [FIXED] Smart Update with LEAST()
+                            // Joins the 'cat' table to get max limits.
+                            // Sets level to the LOWER of (user_input, cat.max_level)
+                            $sql = "UPDATE user_cat uc
+                                    JOIN cat c ON uc.cat_id = c.cat_id
+                                    SET 
+                                        uc.`level` = LEAST(?, c.max_level), 
+                                        uc.plus_level = LEAST(?, c.max_plus_level), 
+                                        uc.modified_at = CURRENT_TIMESTAMP
+                                    WHERE uc.user_id = ? AND uc.cat_id IN ($placeholders)";
                             
                             $params = array_merge([$action['level'], $action['plus_level'], $user_id], $action['cat_ids']);
                             $stmt = $pdo->prepare($sql);

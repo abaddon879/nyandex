@@ -13,6 +13,7 @@ const StatCalculator = {
   getFinalStats: (stats, level, plus) => {
     if (!stats) return { health: 1, attack_power: 1, dps: 1 };
     const totalLevel = level + plus;
+    // Simple multiplier based on the +20% per level formula approx
     const calculatedHealth = (stats.health * (1 + (totalLevel - 1) * 0.2)); 
     const calculatedAttack = (stats.attack_power * (1 + (totalLevel - 1) * 0.2)); 
     return {
@@ -46,7 +47,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     setIsLoading(true);
     setError(null);
     try {
-      console.log(`[QuickEvoView] Fetching Cat ${catId}...`);
       const [catDetails, inventory, userCatProgress] = await Promise.all([
         catService.getCatDetails(catId),
         userTrackerService.getUserInventory(userId),
@@ -129,31 +129,27 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
         await userTrackerService.pinCat(userId, catId);
         setIsPinned(true);
       }
-      // Toggle local state immediately for responsiveness
       setIsPinned(!isPinned);
     } catch (err) {
       alert(`Failed to update pin: ${err.message}`);
     }
   };
   
-  // --- 3. Computed Values (ROBUST) ---
+  // --- 3. Computed Values ---
 
   const currentForm = useMemo(() => {
     if (!staticData) return null;
     
-    // Handle Missing Forms Array
     if (!staticData.forms || staticData.forms.length === 0) {
-        console.warn("[QuickEvoView] No forms found for this cat. Using placeholder.");
         return {
             form_id: 1,
             form_name: "Basic Form (No Data)",
             generic_form_name: "Normal",
-            image_url: "", // Placeholder image or empty
+            image_url: "", 
             stats: null
         };
     }
 
-    // Normal lookup
     const found = staticData.forms.find(f => f.form_id == formId);
     return found || staticData.forms[0];
   }, [staticData, formId]);
@@ -194,6 +190,10 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     ? staticData.cat_order_id 
     : staticData.cat_id;
 
+  // [NEW] Dynamic Limits
+  const maxLevel = staticData.max_level || 50;
+  const maxPlus = staticData.max_plus_level || 0;
+
   return (
     <aside className="quick-evo-view">
       <div className="quick-evo-card">
@@ -222,9 +222,13 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                 className="form-input" 
                 type="number" 
                 min="1"
-                max={staticData.max_level}
+                max={maxLevel} // [NEW]
                 value={level} 
-                onChange={(e) => setLevel(parseInt(e.target.value) || 1)} 
+                onChange={(e) => {
+                    // [NEW] Clamping logic
+                    const val = parseInt(e.target.value) || 1;
+                    setLevel(Math.min(maxLevel, Math.max(1, val)));
+                }} 
               />
             </div>
             <div className="input-group-item">
@@ -233,9 +237,13 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                 className="form-input" 
                 type="number" 
                 min="0"
-                max={staticData.max_plus_level}
+                max={maxPlus} // [NEW]
                 value={plusLevel} 
-                onChange={(e) => setPlusLevel(parseInt(e.target.value) || 0)} 
+                onChange={(e) => {
+                    // [NEW] Clamping logic
+                    const val = parseInt(e.target.value) || 0;
+                    setPlusLevel(Math.min(maxPlus, Math.max(0, val)));
+                }} 
               />
             </div>
           </div>
@@ -252,7 +260,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                         className={`form-icon-btn ${form.form_id == formId ? 'is-active' : ''}`}
                         title={form.form_name}
                     >
-                        {/* [FIX] Point to /units/ */}
                         <img src={`${BASE_URL}/units/${form.image_url}`} alt={form.form_name} loading="lazy" />
                     </button>
                     <span className="form-icon-name">{form.generic_form_name}</span>
@@ -283,7 +290,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
             <h3 className="quick-evo-title" style={{fontSize: '1rem'}}>Next: {nextForm.form_name}</h3>
           </div>
           <div className="quick-evo-body requirements-list">
-             {/* ... Requirements Logic ... */}
              <div className={`requirement-item ${(level+plusLevel) >= nextForm.evolution.required_level ? 'is-complete' : 'is-missing'}`}>
               <span style={{ width: '24px', textAlign: 'center' }}>Lvl</span> 
               <span>Level {nextForm.evolution.required_level}</span>
