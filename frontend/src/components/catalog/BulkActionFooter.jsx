@@ -5,7 +5,7 @@ import BaseButton from '../base/BaseButton';
 /**
  * Implements Spec 7.7: The sticky footer for Bulk Edit Mode.
  */
-function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
+function BulkActionFooter({ userId, selectedBulkIds, totalCount, onSelectAll, onDeselectAll, onComplete }) {
   const [isUpdating, setIsUpdating] = useState(false);
   
   const [levelInput, setLevelInput] = useState('1');
@@ -40,8 +40,6 @@ function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
     });
   };
 
-  // [UPDATED] Mark as Missing (Spec 7.7)
-  // Now uses the efficient backend logic we added to UserCatRepository
   const handleMarkAsMissing = () => {
     if (!confirm(`Mark ${selectedBulkIds.length} cats as MISSING? This will delete your progress for them.`)) return;
     
@@ -82,11 +80,32 @@ function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
       alignItems: 'center',
       gap: '1rem',
       flexWrap: 'wrap',
-      boxShadow: '0 -2px 10px rgba(0,0,0,0.05)'
+      boxShadow: '0 -2px 10px rgba(0,0,0,0.05)',
+      zIndex: 10
     }}>
       
-      <div style={{ fontWeight: 'bold', minWidth: '120px' }}>
-        {selectedBulkIds.length} cat(s)
+      {/* Selection Status & Controls */}
+      <div style={{ display: 'flex', flexDirection: 'column', marginRight: '1rem', minWidth: '140px' }}>
+        <div style={{ fontWeight: 'bold' }}>
+          {selectedBulkIds.length} / {totalCount} selected
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.8rem', marginTop: '4px' }}>
+          <button 
+            onClick={onSelectAll} 
+            style={{ background: 'none', border: 'none', color: 'var(--color-accent-info)', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+            disabled={isUpdating}
+          >
+            Select All
+          </button>
+          <span style={{color: '#ccc'}}>|</span>
+          <button 
+            onClick={onDeselectAll} 
+            style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+            disabled={isUpdating}
+          >
+            None
+          </button>
+        </div>
       </div>
 
       {/* Ownership */}
@@ -95,7 +114,6 @@ function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
           Mark Owned
         </BaseButton>
         
-        {/* [FIXED] Connected onClick to handleMarkAsMissing */}
         <BaseButton variant="destructive" onClick={handleMarkAsMissing} disabled={isUpdating}>
           Mark Missing
         </BaseButton>
@@ -151,7 +169,7 @@ function BulkActionFooter({ userId, selectedBulkIds, onComplete }) {
         </BaseButton>
       </div>
 
-      {isUpdating && <div style={{ marginLeft: 'auto', color: 'var(--color-accent-primary)' }}>Updating...</div>}
+      {isUpdating && <div style={{ marginLeft: 'auto', color: 'var(--color-accent-primary)', fontWeight: 'bold' }}>Updating...</div>}
 
     </footer>
   );

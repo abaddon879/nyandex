@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom'; // [NEW] Import hook
+import { useSearchParams } from 'react-router-dom';
 import { authStore } from '../stores/authStore';
 import { catService } from '../api/catService';
 import { userTrackerService } from '../api/userTrackerService';
@@ -11,7 +11,7 @@ import BulkActionFooter from '../components/catalog/BulkActionFooter.jsx';
 import './CatalogPage.css';
 
 function CatalogPage() {
-  const [searchParams, setSearchParams] = useSearchParams(); // [NEW] Hook usage
+  const [searchParams, setSearchParams] = useSearchParams();
   const [userId, setUserId] = useState(authStore.getState().userId);
   const [mode, setMode] = useState('view');
   const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +20,7 @@ function CatalogPage() {
   const [userCatMap, setUserCatMap] = useState(new Map());
   const [readyToEvolveIds, setReadyToEvolveIds] = useState(new Set());
 
-  // [NEW] Initialize filters based on URL param
+  // Initialize filters based on URL param
   const [filters, setFilters] = useState(() => {
     const filterParam = searchParams.get('filter');
     return { 
@@ -35,7 +35,7 @@ function CatalogPage() {
   const [selectedCatId, setSelectedCatId] = useState(null);
   const [selectedBulkIds, setSelectedBulkIds] = useState([]);
 
-  // [NEW] Listen for URL changes (e.g. if clicking dashboard link while already on catalog)
+  // Listen for URL changes (e.g. if clicking dashboard link while already on catalog)
   useEffect(() => {
     const filterParam = searchParams.get('filter');
     if (filterParam === 'ready') {
@@ -87,6 +87,18 @@ function CatalogPage() {
     );
   }, [masterCatList, userCatMap, readyToEvolveIds, filters, sort]);
   
+  // --- Bulk Selection Handlers ---
+
+  const handleSelectAll = () => {
+    // Select ALL cats currently matching the filters, not just the visible ones
+    const allIds = filteredCatList.map(cat => cat.cat_id);
+    setSelectedBulkIds(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedBulkIds([]);
+  };
+
   if (isLoading && masterCatList.length === 0) return <div>Loading Catalog...</div>;
   if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
 
@@ -125,6 +137,9 @@ function CatalogPage() {
         <BulkActionFooter
           userId={userId}
           selectedBulkIds={selectedBulkIds}
+          totalCount={filteredCatList.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
           onComplete={() => {
             fetchPageData();
             setSelectedBulkIds([]);
@@ -134,4 +149,5 @@ function CatalogPage() {
     </div>
   );
 }
+
 export default CatalogPage;
