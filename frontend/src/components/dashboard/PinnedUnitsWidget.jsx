@@ -6,25 +6,37 @@ const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function PinnedUnitsWidget({ data }) {
   
-  const renderBadge = (req, idx) => {
-    const isImage = !!req.image_url;
-    let label = req.item_name;
-    if (req.type === 'level') label = 'Lv.';
-    if (req.type === 'xp') label = 'XP';
-
-    return (
-        <div 
-            key={idx} 
-            className={`missing-req-badge type-${req.type || 'item'}`} 
-            title={`Need ${req.deficit.toLocaleString()} more ${req.item_name}`}
-        >
-           {isImage ? (
-             <img src={`${BASE_URL}/items/${req.image_url}`} alt={req.item_name} />
-           ) : (
-             <span className="req-text-label">{label}</span>
-           )}
-           <span className="req-deficit">-{req.deficit.toLocaleString()}</span>
+  const renderRequirement = (req, idx) => {
+    // 1. Handle XP (Gold Badge)
+    if (req.type === 'xp' || req.item_name === 'XP') {
+      return (
+        <div key={idx} className="req-badge badge-xp" title="XP Needed">
+          <span>XP</span>
+          <strong>{req.deficit.toLocaleString()}</strong>
         </div>
+      );
+    }
+
+    // 2. Handle Level (Blue Badge)
+    if (req.type === 'level' || req.item_name === 'Level') {
+      return (
+        <div key={idx} className="req-badge badge-level" title="Levels Needed">
+          <span>Lv.</span>
+          <strong>{req.deficit.toLocaleString()}</strong>
+        </div>
+      );
+    }
+
+    // 3. Handle Items (Standard Badge with Icon)
+    return (
+      <div key={idx} className="req-badge badge-item" title={`${req.deficit} more ${req.item_name}`}>
+        {req.image_url ? (
+          <img src={`${BASE_URL}/items/${req.image_url}`} alt={req.item_name} className="req-icon" />
+        ) : (
+          <span>{req.item_name.substring(0, 4)}</span>
+        )}
+        <strong>{req.deficit.toLocaleString()}</strong>
+      </div>
     );
   };
 
@@ -33,60 +45,47 @@ function PinnedUnitsWidget({ data }) {
       <div className="widget-header">
         <div>
             <h3 className="widget-card-title">Pinned Units ({data.length})</h3>
-            {/* [NEW] Helper Subtitle */}
-            <span className="widget-subtitle">Tracking missing resources</span>
+            <span className="widget-subtitle">Tracking goals</span>
         </div>
       </div>
       
       {data.length === 0 ? (
-        <div className="empty-state" style={{ textAlign: 'center', padding: '2rem', color: '#adb5bd' }}>
-          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📌</div>
-          <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>Pin cats to track their missing items here.</p>
+        <div className="empty-state">
+          <span style={{fontSize:'2rem'}}>📌</span>
+          <p>Pin units from the Catalog to track them.</p>
           <Link to="/catalog" className="btn btn-secondary btn-sm">Go to Catalog</Link>
         </div>
       ) : (
-        <div className="pinned-list-wrapper custom-scrollbar">
-          {data.map(unit => {
-            const statsReqs = unit.missing_requirements.filter(r => r.type === 'xp' || r.type === 'level');
-            const itemReqs = unit.missing_requirements.filter(r => r.type === 'item');
-
-            return (
-              <div key={unit.cat_id} className="pinned-unit-card">
-                <Link to={`/detail/${unit.cat_id}`} className="pinned-unit-icon-wrapper">
+        <div className="pinned-list-vertical custom-scrollbar">
+          {data.map(unit => (
+            <div key={unit.cat_id} className="pinned-row">
+              
+              {/* Left: Icon & Name */}
+              <div className="pinned-info">
+                <Link to={`/detail/${unit.cat_id}`} className="pinned-icon-wrapper">
                   <img 
                     src={`${BASE_URL}/units/${unit.unit_image}`} 
                     alt={unit.form_name} 
-                    className="pinned-unit-icon"
                     loading="lazy"
                   />
                 </Link>
-
-                <div className="pinned-unit-details">
-                  <Link to={`/detail/${unit.cat_id}`} className="pinned-unit-name" title={unit.form_name}>
+                <div style={{display:'flex', flexDirection:'column'}}>
+                   <Link to={`/detail/${unit.cat_id}`} className="pinned-name">
                       {unit.form_name}
-                  </Link>
-                  
-                  <div className="missing-reqs-container">
-                    {statsReqs.length > 0 && (
-                        <div className="req-row">
-                            {statsReqs.map((req, idx) => renderBadge(req, `s-${idx}`))}
-                        </div>
-                    )}
-                    {itemReqs.length > 0 && (
-                        <div className="req-row">
-                            {itemReqs.map((req, idx) => renderBadge(req, `i-${idx}`))}
-                        </div>
-                    )}
-                    {unit.missing_requirements.length === 0 && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-accent-success)', fontWeight: '600' }}>
-                            ✓ Ready to Evolve
-                        </div>
-                    )}
-                  </div>
+                   </Link>
+                   {unit.missing_requirements.length === 0 && (
+                     <span className="status-ready">Ready to Evolve!</span>
+                   )}
                 </div>
               </div>
-            );
-          })}
+
+              {/* Right: Requirements Grid */}
+              <div className="pinned-reqs">
+                {unit.missing_requirements.map((req, idx) => renderRequirement(req, idx))}
+              </div>
+
+            </div>
+          ))}
         </div>
       )}
     </div>

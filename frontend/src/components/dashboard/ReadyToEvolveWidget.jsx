@@ -5,13 +5,15 @@ const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function ReadyToEvolveWidget({ data }) {
-  const displayItems = data.slice(0, 12);
+  // Show more items since we will use a responsive grid
+  const displayItems = data.slice(0, 10);
   const totalCount = data.length;
 
-  // Helper to get rarity class
   const getRarityClass = (rarityId) => {
-    if (rarityId >= 2 && rarityId <= 5) return `rarity-border-${rarityId}`;
-    return '';
+    if (rarityId >= 4) return 'border-uber'; // Gold
+    if (rarityId === 3) return 'border-super'; // Blue
+    if (rarityId === 2) return 'border-rare'; // Red
+    return 'border-normal';
   };
 
   return (
@@ -19,62 +21,41 @@ function ReadyToEvolveWidget({ data }) {
       <div className="widget-header">
         <div>
             <h3 className="widget-card-title">Ready to Evolve</h3>
-            {/* [NEW] Helper Subtitle for Clarity */}
-            <span className="widget-subtitle">Requirements met & Inventory ready</span>
+            <span className="widget-subtitle">Requirements met</span>
         </div>
         {totalCount > 0 && (
-          <span style={{ 
-             background: 'var(--color-accent-success)', 
-             color: 'white', 
-             padding: '2px 8px', 
-             borderRadius: '4px', 
-             fontSize: '0.75rem', 
-             fontWeight: '700' 
-          }}>
-            {totalCount}
-          </span>
+            <span className="counter-badge success">{totalCount} Ready</span>
         )}
       </div>
 
       {totalCount === 0 ? (
-        <div style={{ padding: '1.5rem', textAlign: 'center', color: '#adb5bd' }}>
-            <p style={{fontSize: '0.9rem'}}>No cats ready.</p>
+        <div className="empty-state">
+            <p>No cats ready to evolve.</p>
         </div>
       ) : (
-        <>
-          <div className="ready-evolve-grid">
-            {displayItems.map(cat => (
-              <Link 
-                key={cat.cat_id} 
-                to={`/detail/${cat.cat_id}`} 
-                /* [NEW] Add Rarity Class here */
-                className={`ready-evolve-card ${getRarityClass(cat.rarity_id)}`}
-                title={`Evolve to ${cat.next_form_name}`}
-              >
-                <div style={{position: 'relative'}}>
-                     <img 
-                      src={`${BASE_URL}/units/${cat.image_url}`} 
-                      alt={cat.next_form_name} 
-                      className="ready-evolve-icon"
-                      loading="lazy"
-                    />
-                </div>
-                <div className="ready-evolve-name">{cat.next_form_name}</div>
-              </Link>
-            ))}
-          </div>
-          
-          {totalCount > 12 && (
-            <div style={{ marginTop: 'auto', paddingTop: '0.5rem', textAlign: 'right' }}>
-              <Link 
-                to="/catalog?filter=ready" 
-                style={{ textDecoration: 'none', fontSize: '0.8rem', fontWeight: '600', color: 'var(--color-accent-info)' }}
-              >
-                View all {totalCount} ➔
-              </Link>
-            </div>
+        <div className="ready-grid-container custom-scrollbar">
+          {displayItems.map(cat => (
+            <Link 
+              key={cat.cat_id} 
+              to={`/detail/${cat.cat_id}`} 
+              className={`ready-card ${getRarityClass(cat.rarity_id)}`}
+            >
+              <img 
+                src={`${BASE_URL}/units/${cat.image_url}`} 
+                alt={cat.next_form_name} 
+                className="ready-icon"
+                loading="lazy"
+              />
+              <div className="ready-name">{cat.next_form_name}</div>
+            </Link>
+          ))}
+          {totalCount > 10 && (
+             <Link to="/catalog?filter=ready" className="ready-card view-more">
+                <span>+{totalCount - 10}</span>
+                <span style={{fontSize:'0.7rem'}}>More</span>
+             </Link>
           )}
-        </>
+        </div>
       )}
     </div>
   );

@@ -1,382 +1,197 @@
 /* frontend/src/pages/DashboardPage.css */
 
 .dashboard-container {
-  max-width: 1600px;
+  max-width: 1800px;
   margin: 0 auto;
   width: 100%;
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 20px; /* Restored slightly larger gap for cleaner separation */
-  margin-top: 1rem;
   padding-bottom: 2rem;
 }
 
-/* --- Responsive Column Spans --- */
-.widget-my-progress { grid-column: span 12; }
-/* Ready to Evolve & Pinned Units share the top row evenly on desktop */
-.widget-ready-to-evolve { grid-column: span 6; }
-.widget-pinned-units { grid-column: span 6; }
-.widget-evolution-materials { grid-column: span 6; }
-.widget-catseyes { grid-column: span 3; }
-.widget-xp-tracker { grid-column: span 3; }
-
-/* Tablet Breakpoint (Stacked Layout) */
-@media (max-width: 1200px) {
-  .widget-ready-to-evolve { grid-column: span 12; }
-  .widget-pinned-units { grid-column: span 12; }
-  .widget-evolution-materials { grid-column: span 12; }
-  .widget-catseyes { grid-column: span 6; }
-  .widget-xp-tracker { grid-column: span 6; }
+/* --- COMPACT GRID LAYOUT --- */
+.dashboard-grid {
+  display: grid;
+  /* 12 Columns */
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  /* Tighter spacing */
+  gap: 12px; 
+  margin-top: 1rem;
 }
 
-@media (max-width: 768px) {
+/* --- NEW COLUMN SPANS (3-Column Layout) --- */
+
+/* Top Row */
+.widget-my-progress { grid-column: span 12; }
+
+/* Left Column: Materials (The biggest list) */
+.widget-evolution-materials { 
+  grid-column: span 5; 
+  /* Allow it to be tall */
+  grid-row: span 3; 
+}
+
+/* Center Column: Pinned Units (The vertical list) */
+.widget-pinned-units { 
+  grid-column: span 4; 
+  grid-row: span 3; 
+}
+
+/* Right Column: The "Stack" of small widgets */
+.widget-ready-to-evolve { grid-column: span 3; }
+.widget-xp-tracker { grid-column: span 3; }
+.widget-catseyes { grid-column: span 3; }
+
+
+/* --- RESPONSIVE BREAKPOINTS --- */
+
+/* On Laptops (below 1400px), switch to 2-Column mode */
+@media (max-width: 1400px) {
+  /* Materials takes left half */
+  .widget-evolution-materials { grid-column: span 7; grid-row: auto; }
+  
+  /* Pinned takes right half */
+  .widget-pinned-units { grid-column: span 5; grid-row: auto; }
+
+  /* The small widgets go underneath in a row of 3 */
+  .widget-ready-to-evolve { grid-column: span 4; }
+  .widget-xp-tracker { grid-column: span 4; }
+  .widget-catseyes { grid-column: span 4; }
+}
+
+/* On Tablets (below 992px), stack everything */
+@media (max-width: 992px) {
   .dashboard-grid { display: flex; flexDirection: column; }
 }
 
-/* --- Shared Widget Card Styles --- */
+
+/* --- COMPACT WIDGET CARD --- */
 .widget-card {
   background-color: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px; /* Restored padding for better breathing room */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  border-radius: 8px; /* Tighter radius */
+  padding: 16px;      /* Reduced padding for compactness */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   height: 100%;
   box-sizing: border-box;
-  transition: box-shadow 0.2s ease;
-}
-
-.widget-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
 }
 
 .widget-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #f1f5f9;
-  min-height: 32px;
 }
 
 .widget-card-title {
-  font-size: 0.95rem;
-  font-weight: 800; /* Bolder header */
+  font-size: 0.85rem;
+  font-weight: 800;
   margin: 0;
   color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-/* --- PINNED UNITS (Polished Grid) --- */
-.pinned-list-wrapper {
-  display: grid;
-  /* Responsive Grid: Cards will be at least 240px wide */
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
-  gap: 12px;
-  overflow-y: auto;
-  max-height: 420px;
-  padding-right: 6px; /* Space for scrollbar */
-}
-
-/* Custom Scrollbar styling */
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
-
-.pinned-unit-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.pinned-unit-card:hover {
-  border-color: var(--color-accent-primary); /* Highlight border on hover */
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  z-index: 2;
-}
-
-.pinned-unit-icon {
-  width: 56px; /* Restored size */
-  height: 56px;
-  object-fit: contain;
-  border-radius: 6px;
-  background: #f8fafc;
-  border: 1px solid #f1f5f9;
-}
-
-.pinned-unit-details {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.pinned-unit-name {
-  font-weight: 700;
-  color: #1e293b;
-  text-decoration: none;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Compact Badges Container */
-.missing-reqs-container {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.req-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.missing-req-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 0.75rem;
-  color: #475569;
-  height: 22px;
-}
-
-.missing-req-badge img {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
-
-/* Specific Badge Colors */
-.missing-req-badge.type-level {
-  background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8;
-}
-.missing-req-badge.type-xp {
-  background: #fff7ed; border-color: #fed7aa; color: #c2410c;
-}
-
-.req-text-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  opacity: 0.8;
-}
-
-.req-deficit {
-  font-weight: 700;
-  font-size: 0.75rem;
-}
-
-/* --- READY TO EVOLVE (Grid) --- */
-.ready-evolve-grid {
-  display: grid;
-  /* Restored size: 90px min width so cards don't look squashed */
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 12px;
-}
-
-.ready-evolve-card {
-  text-decoration: none;
-  color: inherit;
-  text-align: center;
-  padding: 10px;
-  border-radius: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s;
-}
-
-.ready-evolve-card:hover {
-  transform: translateY(-3px);
-  background: #fff;
-  border-color: var(--color-accent-success);
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
-}
-
-.ready-evolve-icon {
-  width: 60px; /* Restored size */
-  height: 60px;
-  object-fit: contain;
-  margin-bottom: 6px;
-  border-radius: 6px;
-}
-
-.ready-evolve-name {
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #334155;
-  height: 2.4em;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-/* --- MATERIALS & CATSEYES (Restored Visibility) --- */
-.material-grid {
-  display: grid;
-  /* Restored size: 56px min width */
-  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); 
-  gap: 10px;
-}
-
-.material-cell {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 8px 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e2e8f0;
-  transition: background 0.2s;
-}
-.material-cell:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.material-cell.bg-low { background-color: #fef2f2; border-color: #fecaca; }
-.material-cell.bg-empty { opacity: 0.5; filter: grayscale(1); background-color: #f1f5f9; }
-
-.material-icon {
-  width: 40px; /* Restored size */
-  height: 40px;
-  object-fit: contain;
-  margin-bottom: 4px;
-}
-
-.material-qty {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #475569;
-}
-
-/* --- XP TRACKER --- */
-.xp-stat-group {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed #e2e8f0;
-}
-
-.xp-label { 
-  font-size: 0.8rem; 
-  color: #94a3b8; 
-  font-weight: 700; 
-  text-transform: uppercase; 
-}
-
-.xp-val { 
-  font-size: 1rem; 
-  font-weight: 700; 
-  color: #334155; 
-}
-
-.xp-deficit-box {
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 8px;
-  text-align: center;
-  border: 1px solid transparent;
-}
-
-.xp-deficit-box.deficit { background: #fef2f2; border-color: #fee2e2; color: #dc2626; }
-.xp-deficit-box.surplus { background: #f0fdf4; border-color: #dcfce7; color: #16a34a; }
-
-.xp-deficit-label {
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 4px;
-  opacity: 0.8;
-}
-.xp-deficit-val {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-
-/* --- VISUAL POLISH ADDITIONS --- */
-
-/* 1. Widget Subtitles for Clarity */
 .widget-subtitle {
   display: block;
-  font-size: 0.7rem;
-  color: #adb5bd;
+  font-size: 0.65rem;
+  color: #94a3b8;
   font-weight: 600;
-  margin-top: 2px;
-  text-transform: none; /* Normal case for readability */
-  letter-spacing: 0;
+  margin-top: 0;
 }
 
-/* 2. Battle Cats Rarity Borders (for Ready to Evolve) */
-/* 2=Rare (Red), 3=Super Rare (Blue), 4=Uber (Gold), 5=Legend (Purple) */
-.rarity-border-2 { border-color: #fd7e14 !important; background-color: #fff5f5; }
-.rarity-border-3 { border-color: #4dabf7 !important; background-color: #e7f5ff; }
-.rarity-border-4 { border-color: #ffd43b !important; background-color: #fff9db; }
-.rarity-border-5 { border-color: #da77f2 !important; background-color: #f3d9fa; }
+/* --- SCROLLBARS --- */
+.custom-scrollbar { overflow-y: auto; padding-right: 4px; }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
 
-/* 3. Action Hints on Hover */
-.pinned-unit-card {
-  position: relative;
+/* --- MATERIALS (Tighter Grid) --- */
+.materials-scroll-container {
+    /* Allow it to grow to match the neighbor columns, but cap it */
+    max-height: 550px; 
+    overflow-y: auto;
 }
-
-/* Shows a subtle "View" arrow when hovering a card */
-.pinned-unit-card::after, .ready-evolve-card::after {
-  content: '➔';
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
-  opacity: 0;
-  transition: opacity 0.2s, right 0.2s;
-  color: var(--color-accent-primary);
-  font-weight: bold;
-  pointer-events: none;
-}
-
-.pinned-unit-card:hover::after, .ready-evolve-card:hover::after {
-  opacity: 1;
-  right: 5px;
-}
-
-/* 4. Better Material Headers */
 .material-group-header {
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #868e96; /* Darker than before for readability */
-  margin-bottom: 8px;
-  padding-bottom: 4px;
-  border-bottom: 2px solid #f1f3f5; /* Stronger separator */
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: flex;
-  justify-content: space-between;
+  font-size: 0.65rem; font-weight: 800; color: #94a3b8;
+  margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px solid #f1f5f9;
+  text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between;
 }
+.material-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); /* Even tighter columns */
+  gap: 6px;
+}
+.material-cell {
+  background: #ffffff; border-radius: 6px; padding: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 1px solid #e2e8f0; position: relative;
+}
+.material-cell:hover { border-color: #cbd5e1; transform: scale(1.1); z-index: 2; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.material-cell.bg-low { background-color: #fff1f2; border-color: #fecdd3; }
+.material-cell.bg-empty { opacity: 0.4; filter: grayscale(1); background-color: #f8fafc; }
+.material-icon { width: 32px; height: 32px; object-fit: contain; margin-bottom: 2px; }
+.material-qty { font-size: 0.7rem; font-weight: 700; color: #334155; background: #f1f5f9; padding: 0 4px; border-radius: 4px; min-width: 16px; text-align: center; }
+
+/* --- PINNED UNITS --- */
+.pinned-list-vertical {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 550px; /* Match materials height */
+  overflow-y: auto;
+}
+.pinned-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border: 1px solid #f1f5f9; border-radius: 6px;
+  padding: 8px; transition: all 0.1s;
+}
+.pinned-row:hover { border-color: #cbd5e1; }
+.pinned-info { display: flex; align-items: center; gap: 10px; width: 50%; }
+.pinned-icon-wrapper img { width: 40px; height: 40px; object-fit: contain; border-radius: 4px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.pinned-name { font-weight: 700; color: #334155; text-decoration: none; font-size: 0.8rem; line-height: 1.1; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-ready { font-size: 0.65rem; color: #16a34a; font-weight: 700; display: block; }
+.pinned-reqs { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; flex: 1; }
+
+/* Badges */
+.req-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; border: 1px solid transparent; white-space: nowrap; }
+.req-badge strong { font-weight: 700; margin-left: 2px; }
+.req-icon { width: 16px; height: 16px; object-fit: contain; }
+.badge-xp { background: #fffbeb; border-color: #fcd34d; color: #b45309; }
+.badge-level { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.badge-item { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+
+/* --- READY TO EVOLVE --- */
+/* Now inside a narrower column (span 3), so we use fewer columns */
+.ready-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 8px;
+  max-height: 200px; /* Short list */
+  overflow-y: auto;
+}
+.ready-card {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  text-decoration: none; background: #fff; border: 1px solid #f1f5f9;
+  border-radius: 6px; padding: 6px; transition: transform 0.1s;
+}
+.ready-card:hover { transform: translateY(-2px); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+.ready-icon { width: 48px; height: 48px; object-fit: contain; margin-bottom: 4px; }
+.ready-name { font-size: 0.65rem; font-weight: 600; color: #475569; line-height: 1.1; height: 2.2em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.view-more { justify-content: center; color: #3b82f6; font-weight: 700; background: #f0f9ff; border-color: #bae6fd; }
+/* Rarity Borders */
+.border-uber { border-bottom: 2px solid #facc15; }
+.border-super { border-bottom: 2px solid #60a5fa; }
+.border-rare { border-bottom: 2px solid #f87171; }
+.border-normal { border-bottom: 2px solid #e2e8f0; }
+
+/* --- XP TRACKER --- */
+.xp-stat-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #e2e8f0; }
+.xp-label { font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+.xp-val { font-size: 0.9rem; font-weight: 600; color: #334155; }
+.xp-deficit-box { margin-top: 10px; padding: 10px; border-radius: 6px; text-align: center; }
+.xp-deficit-box.deficit { background: #fff5f5; border: 1px solid #fecaca; color: #ef4444; }
+.xp-deficit-box.surplus { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
+.xp-deficit-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; opacity: 0.8; }
+.xp-deficit-val { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
