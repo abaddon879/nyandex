@@ -100,8 +100,7 @@ class DashboardRepository
                      WHERE ui.user_id = ? AND i.item_type = 'XP') >= cf_next.required_xp
                 )
                 GROUP BY uc.cat_id
-                ORDER BY c.rarity_id DESC, uc.`level` DESC
-                LIMIT 5";
+                ORDER BY c.rarity_id DESC, uc.`level` DESC";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$user_id, $user_id, $user_id]);
