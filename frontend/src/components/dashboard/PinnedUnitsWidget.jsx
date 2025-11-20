@@ -40,7 +40,7 @@ function PinnedUnitsWidget({ data }) {
                        {req.image_url ? (
                          <img src={`${BASE_URL}/items/${req.image_url}`} alt={req.item_name} className="req-icon-sm"/>
                        ) : (
-                         <span className="req-text-fallback">{req.item_name.substring(0,2)}</span>
+                         <span className="req-text-fallback">{req.item_name.substring(0,10)}</span>
                        )}
                        <span className="req-deficit">-{req.deficit.toLocaleString()}</span>
                     </div>

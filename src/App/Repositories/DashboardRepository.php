@@ -159,9 +159,9 @@ class DashboardRepository
                 evo.current_form_name as form_name,
                 evo.current_image_url as unit_image,
                 'xp' as missing_type,
-                NULL as item_id,
+                (SELECT item_id FROM item WHERE item_type = 'XP' LIMIT 1) as item_id,
                 'XP' as item_name,
-                NULL as image_url,
+                (SELECT image_url FROM item WHERE item_type = 'XP' LIMIT 1) as image_url,
                 evo.required_xp as needed,
                 evo.user_xp as owned,
                 (evo.required_xp - evo.user_xp) as deficit
