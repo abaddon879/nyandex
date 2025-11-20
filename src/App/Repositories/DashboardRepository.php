@@ -15,7 +15,6 @@ class DashboardRepository
         $this->pdo = $this->database->getConnection();
     }
 
-    // ... (getDashboardData stays the same) ...
     public function getDashboardData(int $user_id): array
     {
         $pinnedUnitsData = $this->getPinnedUnits($user_id);
@@ -24,7 +23,17 @@ class DashboardRepository
             'my_progress' => $this->getMyProgress($user_id),
             'ready_to_evolve' => $this->getReadyToEvolve($user_id),
             'pinned_units' => $pinnedUnitsData['units'],
-            'evolution_materials' => $this->getInventoryGroup($user_id, ['Catseed', 'Catfruit', 'Material', 'Material Z']),
+            
+            // [FIX] Added 'Behemoth Stone' and 'Behemoth Gem' to this list
+            'evolution_materials' => $this->getInventoryGroup($user_id, [
+                'Catseed', 
+                'Catfruit', 
+                'Material', 
+                'Material Z', 
+                'Behemoth Stone', 
+                'Behemoth Gem'
+            ]),
+            
             'catseyes' => $this->getInventoryGroup($user_id, ['Catseye']),
             'xp_tracker' => $this->getXpTracker($user_id, $pinnedUnitsData['total_xp_needed'])
         ];
@@ -32,11 +41,9 @@ class DashboardRepository
 
     /**
      * Widget 1: My Progress
-     * Updated to include User Rank calculation.
      */
     private function getMyProgress(int $user_id): array
     {
-        // Added the third subquery for User Rank
         $sqlUser = "SELECT 
                         (SELECT COUNT(cat_id) FROM user_cat WHERE user_id = ?) as owned,
                         (SELECT COUNT(uc.cat_id) FROM user_cat uc
@@ -60,16 +67,12 @@ class DashboardRepository
             'cats_owned_total' => (int)$totals['total_cats'],
             'true_forms_count' => (int)$userProgress['true_forms'],
             'true_forms_total' => (int)$totals['total_true_forms'],
-            'user_rank'        => (int)$userProgress['user_rank'] // New field
+            'user_rank'        => (int)$userProgress['user_rank']
         ];
     }
-
-    // ... (The rest of the file: getReadyToEvolve, getPinnedUnits, etc. remain unchanged) ...
-    // (Include them if you are copying the whole file, otherwise just update getMyProgress)
     
     private function getReadyToEvolve(int $user_id): array
     {
-        // (Keep the version with image_url from the previous step)
         $sql = "SELECT 
                     uc.cat_id, 
                     c.rarity_id,
@@ -109,7 +112,6 @@ class DashboardRepository
 
     private function getPinnedUnits(int $user_id): array
     {
-         // (Keep the version with image_url from the previous step)
          $nextEvoSubquery = "
             SELECT 
                 p.cat_id, 
@@ -236,7 +238,8 @@ class DashboardRepository
     {
         $placeholders = implode(',', array_fill(0, count($item_types), '?'));
         
-        $sql = "SELECT i.item_name, i.image_url, i.item_type, ui.item_quantity
+        // [FIX] Added 'i.item_id' to the selected columns
+        $sql = "SELECT i.item_id, i.item_name, i.image_url, i.item_type, ui.item_quantity
                 FROM user_item ui
                 JOIN item i ON ui.item_id = i.item_id
                 WHERE ui.user_id = ? AND i.item_type IN ($placeholders)
