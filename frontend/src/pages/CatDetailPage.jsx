@@ -30,7 +30,7 @@ function CatDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  // [NEW] Track the original state to detect dirty changes
+  // [NEW] Track original state for dirty checking
   const [originalState, setOriginalState] = useState(null);
 
   // --- Data Fetching ---
@@ -70,6 +70,7 @@ function CatDetailPage() {
         nextOwned = true;
       } 
       
+      // Apply state
       setLevel(nextLevel);
       setPlusLevel(nextPlus);
       setFormId(nextForm);
@@ -99,7 +100,6 @@ function CatDetailPage() {
 
 
   // --- [NEW] Dirty Check & Blocker ---
-  
   const isDirty = useMemo(() => {
     if (!originalState) return false;
     return (
@@ -142,7 +142,6 @@ function CatDetailPage() {
       
       setIsOwned(true);
       
-      // Update original state to match new saved state
       setOriginalState({
         level,
         plusLevel,
@@ -150,7 +149,7 @@ function CatDetailPage() {
         notes
       });
 
-      // Optional: Toast notification here
+      alert("Saved successfully!");
     } catch (err) {
       alert(err.message);
     } finally {
@@ -186,11 +185,11 @@ function CatDetailPage() {
 
   // --- Render ---
 
-  if (isLoading) return <div className="page-loading">Loading Cat Details...</div>;
-  if (error) return <div className="page-error">{error}</div>;
-  if (!staticData) return <div className="page-error">Cat not found.</div>;
+  if (isLoading) return <div className="page-loading" style={{padding:'2rem'}}>Loading Cat Details...</div>;
+  if (error) return <div className="page-error" style={{padding:'2rem', color:'red'}}>{error}</div>;
+  if (!staticData) return <div className="page-error" style={{padding:'2rem'}}>Cat not found.</div>;
 
-  // [NEW] Dynamic Max Values
+  // [NEW] Dynamic Limits
   const maxLevel = staticData.max_level || 50;
   const maxPlus = staticData.max_plus_level || 0;
 
@@ -226,38 +225,14 @@ function CatDetailPage() {
         <section className="detail-section">
           <h2>Combat Stats (Lvl {level} + {plusLevel})</h2>
           <div className="stats-grid">
-            <div className="stat-box">
-                <label>HP</label>
-                <div className="stat-value">{stats.health.toLocaleString()}</div>
-            </div>
-            <div className="stat-box">
-                <label>Attack</label>
-                <div className="stat-value">{stats.attack_power.toLocaleString()}</div>
-            </div>
-            <div className="stat-box">
-                <label>DPS</label>
-                <div className="stat-value">{stats.dps.toLocaleString()}</div>
-            </div>
-            <div className="stat-box">
-                <label>Range</label>
-                <div className="stat-value">{currentForm.stats.attack_range}</div>
-            </div>
-            <div className="stat-box">
-                <label>Speed</label>
-                <div className="stat-value">{currentForm.stats.move_speed}</div>
-            </div>
-            <div className="stat-box">
-                <label>Cost</label>
-                <div className="stat-value">{currentForm.stats.cost}</div>
-            </div>
-            <div className="stat-box">
-                <label>Knockbacks</label>
-                <div className="stat-value">{currentForm.stats.knockbacks}</div>
-            </div>
-            <div className="stat-box">
-                <label>Attack Freq</label>
-                <div className="stat-value">{(currentForm.stats.attack_frequency_f / 30).toFixed(2)}s</div>
-            </div>
+            <div className="stat-box"><label>HP</label><div className="stat-value">{stats.health.toLocaleString()}</div></div>
+            <div className="stat-box"><label>Attack</label><div className="stat-value">{stats.attack_power.toLocaleString()}</div></div>
+            <div className="stat-box"><label>DPS</label><div className="stat-value">{stats.dps.toLocaleString()}</div></div>
+            <div className="stat-box"><label>Range</label><div className="stat-value">{currentForm.stats.attack_range}</div></div>
+            <div className="stat-box"><label>Speed</label><div className="stat-value">{currentForm.stats.move_speed}</div></div>
+            <div className="stat-box"><label>Cost</label><div className="stat-value">{currentForm.stats.cost}</div></div>
+            <div className="stat-box"><label>Knockbacks</label><div className="stat-value">{currentForm.stats.knockbacks}</div></div>
+            <div className="stat-box"><label>Attack Freq</label><div className="stat-value">{(currentForm.stats.attack_frequency_f / 30).toFixed(2)}s</div></div>
           </div>
         </section>
         )}
@@ -267,9 +242,7 @@ function CatDetailPage() {
             <h2>Evolution</h2>
             <div className="evolution-list">
                 {staticData.forms.map((form, idx) => {
-                    // Does this form have requirements? (Only needed for forms > 1)
                     const hasReqs = form.evolution && (form.evolution.required_level || form.evolution.requirements.length > 0);
-
                     return (
                         <div key={form.form_id} className={`evolution-row ${form.form_id == formId ? 'active-form' : ''}`}>
                             <div 
@@ -310,7 +283,7 @@ function CatDetailPage() {
             <h2>My Notes</h2>
             <textarea 
                 className="notes-area"
-                placeholder="Add strategy notes, talent plans, etc..."
+                placeholder="Add strategy notes..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
             />
@@ -329,31 +302,23 @@ function CatDetailPage() {
             </div>
             
             <div className="control-group">
-                <label>Current Level <small style={{fontWeight:'normal', color: '#666'}}>(Max: {maxLevel})</small></label>
+                <label>Current Level <small className="text-secondary">(Max: {maxLevel})</small></label>
                 <div className="level-inputs">
                     <input 
-                        type="number" 
-                        className="form-input"
-                        value={level} 
-                        min="1" 
-                        max={maxLevel} // [NEW]
+                        type="number" className="form-input" value={level} min="1" max={maxLevel}
                         onChange={(e) => {
-                            // [NEW] Clamp value
-                            const val = parseInt(e.target.value) || 0;
-                            setLevel(Math.min(maxLevel, Math.max(1, val)));
+                           // [NEW] Clamping logic
+                           const val = parseInt(e.target.value) || 1;
+                           setLevel(Math.min(maxLevel, Math.max(1, val)));
                         }}
                     />
                     <span className="plus-sign">+</span>
                     <input 
-                        type="number" 
-                        className="form-input"
-                        value={plusLevel} 
-                        min="0" 
-                        max={maxPlus} // [NEW]
+                        type="number" className="form-input" value={plusLevel} min="0" max={maxPlus}
                         onChange={(e) => {
-                            // [NEW] Clamp value
-                            const val = parseInt(e.target.value) || 0;
-                            setPlusLevel(Math.min(maxPlus, Math.max(0, val)));
+                           // [NEW] Clamping logic
+                           const val = parseInt(e.target.value) || 0;
+                           setPlusLevel(Math.min(maxPlus, Math.max(0, val)));
                         }}
                     />
                 </div>
@@ -374,18 +339,13 @@ function CatDetailPage() {
                 </div>
             </div>
 
-            <BaseButton 
-                variant="primary" 
-                className="save-btn"
-                onClick={handleSave}
-                disabled={isSaving}
-            >
+            <BaseButton variant="primary" className="save-btn" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? 'Saving...' : (isOwned ? 'Save Changes' : 'Add to Collection')}
             </BaseButton>
             
             <div className="last-updated">
                {isOwned ? "Owned" : "Not in collection"}
-               {isDirty && <div style={{color: '#dc3545', marginTop: '5px', fontWeight: 'bold'}}>● Unsaved Changes</div>}
+               {isDirty && <div style={{color:'var(--color-accent-destructive)', fontWeight:'bold', marginTop:'0.5rem'}}>● Unsaved Changes</div>}
             </div>
         </div>
       </aside>

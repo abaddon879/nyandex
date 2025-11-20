@@ -25,9 +25,6 @@ class UserCatRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * [FIXED] Fetches user data and pinned status separately to ensure accuracy.
-     */
     public function findByUserAndCat(int $user_id, int $cat_id): array
     {
         $pdo = $this->database->getConnection();
@@ -40,7 +37,7 @@ class UserCatRepository
         $stmtCat->execute(['user_id' => $user_id, 'cat_id' => $cat_id]);
         $catData = $stmtCat->fetch(PDO::FETCH_ASSOC);
 
-        // 2. Check if the cat is pinned (Separate query is safer/faster here)
+        // 2. Check if the cat is pinned
         $sqlPin = "SELECT COUNT(*) FROM user_pinned_cat WHERE user_id = :user_id AND cat_id = :cat_id";
         $stmtPin = $pdo->prepare($sqlPin);
         $stmtPin->execute(['user_id' => $user_id, 'cat_id' => $cat_id]);
@@ -48,12 +45,10 @@ class UserCatRepository
 
         // 3. Build the result
         if ($catData) {
-            // User owns the cat
             $catData['is_owned'] = true;
             $catData['is_pinned'] = $isPinned;
             return $catData;
         } else {
-            // User does NOT own the cat, but we return the pinned status
             return [
                 'cat_id' => $cat_id,
                 'level' => 0,
@@ -108,7 +103,6 @@ class UserCatRepository
         try {
             $pdo->beginTransaction();
 
-            // Prepare statement for finding the first form (used in set_owned)
             $firstFormStmt = $pdo->prepare("SELECT MIN(form_id) as first_form_id FROM cat_form WHERE cat_id = :cat_id");
 
             foreach ($actions as $action) {
@@ -142,6 +136,7 @@ class UserCatRepository
                      $sql = "DELETE FROM user_cat WHERE user_id = ? AND cat_id IN ($placeholders)";
                      
                      $params = array_merge([$user_id], $action['cat_ids']);
+                     
                      $stmt = $pdo->prepare($sql);
                      $stmt->execute($params);
                      $totalAffectedRows += $stmt->rowCount();
@@ -154,9 +149,7 @@ class UserCatRepository
 
                     switch ($action['action']) {
                         case 'set_level':
-                            // [FIXED] Smart Update with LEAST()
-                            // Joins the 'cat' table to get max limits.
-                            // Sets level to the LOWER of (user_input, cat.max_level)
+                            // [FIXED] Smart Update: Updates level/plus_level but CAPS it at the cat's max
                             $sql = "UPDATE user_cat uc
                                     JOIN cat c ON uc.cat_id = c.cat_id
                                     SET 

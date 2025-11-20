@@ -13,7 +13,6 @@ const StatCalculator = {
   getFinalStats: (stats, level, plus) => {
     if (!stats) return { health: 1, attack_power: 1, dps: 1 };
     const totalLevel = level + plus;
-    // Simple multiplier based on the +20% per level formula approx
     const calculatedHealth = (stats.health * (1 + (totalLevel - 1) * 0.2)); 
     const calculatedAttack = (stats.attack_power * (1 + (totalLevel - 1) * 0.2)); 
     return {
@@ -47,6 +46,7 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     setIsLoading(true);
     setError(null);
     try {
+      console.log(`[QuickEvoView] Fetching Cat ${catId}...`);
       const [catDetails, inventory, userCatProgress] = await Promise.all([
         catService.getCatDetails(catId),
         userTrackerService.getUserInventory(userId),
@@ -68,7 +68,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
         setLevel(userCatProgress.level || 1);
         setPlusLevel(userCatProgress.plus_level || 0);
         setFormId(userCatProgress.form_id || defaultFormId);
-        // Robust check for pinned status
         const pinnedVal = userCatProgress.is_pinned;
         setIsPinned(pinnedVal === true || Number(pinnedVal) === 1);
       } else {
@@ -190,7 +189,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     ? staticData.cat_order_id 
     : staticData.cat_id;
 
-  // [NEW] Dynamic Limits
   const maxLevel = staticData.max_level || 50;
   const maxPlus = staticData.max_plus_level || 0;
 
@@ -204,12 +202,7 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                 ID: #{displayId}
              </span>
           </div>
-          <BaseButton 
-            onClick={handleTogglePin} 
-            variant={isPinned ? "primary" : "secondary"}
-            title="Track this cat on Dashboard"
-            style={{ padding: '4px 8px' }}
-          >
+          <BaseButton onClick={handleTogglePin} variant={isPinned ? "primary" : "secondary"} title="Track on Dashboard" style={{ padding: '4px 8px' }}>
             {isPinned ? '📌 Pinned' : '📌 Track'}
           </BaseButton>
         </div>
@@ -219,13 +212,8 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
             <div className="input-group-item">
               <label>Level</label>
               <input 
-                className="form-input" 
-                type="number" 
-                min="1"
-                max={maxLevel} // [NEW]
-                value={level} 
+                className="form-input" type="number" min="1" max={maxLevel} value={level} 
                 onChange={(e) => {
-                    // [NEW] Clamping logic
                     const val = parseInt(e.target.value) || 1;
                     setLevel(Math.min(maxLevel, Math.max(1, val)));
                 }} 
@@ -234,13 +222,8 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
             <div className="input-group-item">
               <label>+Level</label>
               <input 
-                className="form-input" 
-                type="number" 
-                min="0"
-                max={maxPlus} // [NEW]
-                value={plusLevel} 
+                className="form-input" type="number" min="0" max={maxPlus} value={plusLevel} 
                 onChange={(e) => {
-                    // [NEW] Clamping logic
                     const val = parseInt(e.target.value) || 0;
                     setPlusLevel(Math.min(maxPlus, Math.max(0, val)));
                 }} 
@@ -248,18 +231,13 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
             </div>
           </div>
           
-          {/* Only render form icons if we actually have forms */}
           {staticData.forms && staticData.forms.length > 0 ? (
             <div className="form-icon-group">
                 {staticData.forms.map((form, index) => (
                 <React.Fragment key={form.form_id}>
                     {index > 0 && <span className="form-icon-connector">›</span>}
                     <div className="form-icon-item">
-                    <button
-                        onClick={() => handleFormClick(form)}
-                        className={`form-icon-btn ${form.form_id == formId ? 'is-active' : ''}`}
-                        title={form.form_name}
-                    >
+                    <button onClick={() => handleFormClick(form)} className={`form-icon-btn ${form.form_id == formId ? 'is-active' : ''}`} title={form.form_name}>
                         <img src={`${BASE_URL}/units/${form.image_url}`} alt={form.form_name} loading="lazy" />
                     </button>
                     <span className="form-icon-name">{form.generic_form_name}</span>
@@ -273,77 +251,42 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
             </div>
           )}
           
-          <BaseButton 
-            onClick={handleSaveProgress} 
-            variant="primary" 
-            disabled={isSaving}
-            style={{ width: '100%', marginTop: '1rem' }}
-          >
+          <BaseButton onClick={handleSaveProgress} variant="primary" disabled={isSaving} style={{ width: '100%', marginTop: '1rem' }}>
             {isSaving ? 'Saving...' : 'Save Changes'}
           </BaseButton>
         </div>
       </div>
 
-      {nextForm ? (
+      {nextForm && (
         <div className="quick-evo-card">
-          <div className="quick-evo-header">
-            <h3 className="quick-evo-title" style={{fontSize: '1rem'}}>Next: {nextForm.form_name}</h3>
-          </div>
-          <div className="quick-evo-body requirements-list">
-             <div className={`requirement-item ${(level+plusLevel) >= nextForm.evolution.required_level ? 'is-complete' : 'is-missing'}`}>
-              <span style={{ width: '24px', textAlign: 'center' }}>Lvl</span> 
-              <span>Level {nextForm.evolution.required_level}</span>
-              {(level+plusLevel) >= nextForm.evolution.required_level && ' ✓'}
+            <div className="quick-evo-header">
+                <h3 className="quick-evo-title" style={{fontSize: '1rem'}}>Next: {nextForm.form_name}</h3>
             </div>
-            {nextForm.evolution.requirements.map(req => {
-              const userQty = inventoryMap.get(req.item_id) || 0;
-              const isComplete = userQty >= req.item_qty;
-              const percent = Math.min(100, (userQty / req.item_qty) * 100);
-              return (
-                <div key={req.item_id} style={{ marginTop: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                    <span>Item #{req.item_id}</span>
-                    <span className={isComplete ? 'text-success' : 'text-secondary'}>
-                        {userQty} / {req.item_qty}
-                    </span>
-                  </div>
-                  <div className="progress-track" style={{ height: '6px', marginTop: '2px' }}>
-                      <div className="progress-fill" style={{ 
-                          width: `${percent}%`, 
-                          backgroundColor: isComplete ? 'var(--color-accent-success)' : 'var(--color-accent-info)'
-                      }}></div>
-                  </div>
+            <div className="quick-evo-body requirements-list">
+                <div className={`requirement-item ${(level+plusLevel) >= nextForm.evolution.required_level ? 'is-complete' : 'is-missing'}`}>
+                    <span style={{ width: '24px', textAlign: 'center' }}>Lvl</span> 
+                    <span>Level {nextForm.evolution.required_level}</span>
+                    {(level+plusLevel) >= nextForm.evolution.required_level && ' ✓'}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : (
-         <div className="quick-evo-card">
-          <div className="quick-evo-body">
-            <p className="text-success" style={{ textAlign: 'center', margin: 0 }}>
-                {staticData.forms && staticData.forms.length > 0 ? "Max Evolution Reached!" : "No Evolution Data"}
-            </p>
-          </div>
-        </div>
-      )}
-      
-      {calculatedStats && (
-        <div className="quick-evo-card">
-          <div className="quick-evo-header">
-            <h3 className="quick-evo-title" style={{fontSize: '1rem'}}>Stats (Preview)</h3>
-          </div>
-          <div className="quick-evo-body" style={{ fontSize: '0.9rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>HP:</span> <strong>{calculatedStats.health.toLocaleString()}</strong>
+                {nextForm.evolution.requirements.map(req => {
+                  const userQty = inventoryMap.get(req.item_id) || 0;
+                  const isComplete = userQty >= req.item_qty;
+                  const percent = Math.min(100, (userQty / req.item_qty) * 100);
+                  return (
+                    <div key={req.item_id} style={{ marginTop: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span>Item #{req.item_id}</span>
+                        <span className={isComplete ? 'text-success' : 'text-secondary'}>
+                            {userQty} / {req.item_qty}
+                        </span>
+                      </div>
+                      <div className="progress-track" style={{ height: '6px', marginTop: '2px' }}>
+                          <div className="progress-fill" style={{ width: `${percent}%`, backgroundColor: isComplete ? 'var(--color-accent-success)' : 'var(--color-accent-info)' }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>Attack:</span> <strong>{calculatedStats.attack_power.toLocaleString()}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>DPS:</span> <strong>{calculatedStats.dps.toLocaleString()}</strong>
-            </div>
-          </div>
         </div>
       )}
 
@@ -352,7 +295,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
             View Full Details ➔
         </Link>
       </div>
-      
     </aside>
   );
 }

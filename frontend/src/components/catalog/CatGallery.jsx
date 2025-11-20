@@ -15,7 +15,8 @@ function CatGallery({
 }) {
 
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-    // Track the last clicked ID for shift-select logic
+    
+    // [NEW] Track last clicked item for Shift+Select ranges
     const lastClickedIdRef = useRef(null);
 
     useEffect(() => {
@@ -24,7 +25,7 @@ function CatGallery({
 
     const handleBulkSelection = (catId, isShiftKey) => {
         if (isShiftKey && lastClickedIdRef.current !== null) {
-            // 1. Find indices in the full filtered list
+            // 1. Find indices in the currently visible/filtered list
             const lastIndex = catList.findIndex(c => c.cat_id === lastClickedIdRef.current);
             const currentIndex = catList.findIndex(c => c.cat_id === catId);
 
@@ -32,7 +33,7 @@ function CatGallery({
                 const start = Math.min(lastIndex, currentIndex);
                 const end = Math.max(lastIndex, currentIndex);
                 
-                // 2. Get all IDs in range
+                // 2. Get all IDs in that range
                 const rangeIds = catList.slice(start, end + 1).map(c => c.cat_id);
                 
                 // 3. Merge unique IDs
@@ -42,7 +43,7 @@ function CatGallery({
                 });
             }
         } else {
-            // Standard Toggle
+            // Standard Toggle behavior
             onBulkSelect(prevIds => {
                 if (prevIds.includes(catId)) {
                     return prevIds.filter(id => id !== catId);
@@ -52,7 +53,7 @@ function CatGallery({
             });
         }
         
-        // Update ref
+        // Update ref for next click
         lastClickedIdRef.current = catId;
     };
 
@@ -60,7 +61,7 @@ function CatGallery({
         if (mode === 'view') {
             onCatSelect(catId);
         } else {
-            // Pass the shift key state
+            // [FIXED] Pass the shiftKey status from the click event
             handleBulkSelection(catId, event.shiftKey);
         }
     };
@@ -96,10 +97,7 @@ function CatGallery({
                             mode={mode}
                             onClick={(e) => handleCatClick(cat.cat_id, e)}
                             onCheckboxToggle={(e) => {
-                                // Handle direct checkbox clicks (prevent bubbling double triggers if necessary)
-                                // If CatCard stops propagation, we might need logic here, 
-                                // but usually onClick on the div is enough.
-                                // We pass 'e' to detect shift key here too if needed.
+                                // Optional: handle checkbox click explicitly if needed
                             }}
                             isSelected={isSelected}
                         />
