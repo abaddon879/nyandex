@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef } from 'react'; // [FIX] Removed useState/useEffect imports
 import CatCard from './CatCard.jsx';
 import BaseButton from '../base/BaseButton.jsx';
 import './CatGallery.css';
-
-const PAGE_SIZE = 50;
 
 function CatGallery({ 
     mode, 
@@ -11,21 +9,20 @@ function CatGallery({
     userMap, 
     onCatSelect, 
     selectedBulkIds, 
-    onBulkSelect  
+    onBulkSelect,
+    // [NEW] Props from parent
+    visibleCount,
+    onLoadMore
 }) {
-
-    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     
-    // [NEW] Track last clicked item for Shift+Select ranges
+    // Track last clicked item for Shift+Select ranges
     const lastClickedIdRef = useRef(null);
 
-    useEffect(() => {
-      setVisibleCount(PAGE_SIZE);
-    }, [catList]);
+    // [REMOVED] Internal state for visibleCount
+    // [REMOVED] useEffect to reset visibleCount
 
     const handleBulkSelection = (catId, isShiftKey) => {
         if (isShiftKey && lastClickedIdRef.current !== null) {
-            // 1. Find indices in the currently visible/filtered list
             const lastIndex = catList.findIndex(c => c.cat_id === lastClickedIdRef.current);
             const currentIndex = catList.findIndex(c => c.cat_id === catId);
 
@@ -33,17 +30,14 @@ function CatGallery({
                 const start = Math.min(lastIndex, currentIndex);
                 const end = Math.max(lastIndex, currentIndex);
                 
-                // 2. Get all IDs in that range
                 const rangeIds = catList.slice(start, end + 1).map(c => c.cat_id);
                 
-                // 3. Merge unique IDs
                 onBulkSelect(prev => {
                     const newSet = new Set([...prev, ...rangeIds]);
                     return Array.from(newSet);
                 });
             }
         } else {
-            // Standard Toggle behavior
             onBulkSelect(prevIds => {
                 if (prevIds.includes(catId)) {
                     return prevIds.filter(id => id !== catId);
@@ -52,8 +46,6 @@ function CatGallery({
                 }
             });
         }
-        
-        // Update ref for next click
         lastClickedIdRef.current = catId;
     };
 
@@ -61,15 +53,10 @@ function CatGallery({
         if (mode === 'view') {
             onCatSelect(catId);
         } else {
-            // [FIXED] Pass the shiftKey status from the click event
             handleBulkSelection(catId, event.shiftKey);
         }
     };
     
-    const handleLoadMore = () => {
-        setVisibleCount(prevCount => prevCount + PAGE_SIZE);
-    };
-
     if (catList.length === 0) {
         return (
             <div className="gallery-empty-state">
@@ -96,9 +83,7 @@ function CatGallery({
                             userProgress={userProgress}
                             mode={mode}
                             onClick={(e) => handleCatClick(cat.cat_id, e)}
-                            onCheckboxToggle={(e) => {
-                                // Optional: handle checkbox click explicitly if needed
-                            }}
+                            onCheckboxToggle={() => {}}
                             isSelected={isSelected}
                         />
                     );
@@ -107,7 +92,8 @@ function CatGallery({
 
             {hasMore && (
                 <div className="gallery-load-more">
-                    <BaseButton onClick={handleLoadMore} variant="secondary">
+                    {/* [UPDATED] Use prop handler */}
+                    <BaseButton onClick={onLoadMore} variant="secondary">
                         Load More ({catList.length - visibleCount} remaining)
                     </BaseButton>
                 </div>

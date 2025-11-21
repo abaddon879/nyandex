@@ -10,17 +10,25 @@ import QuickEvoView from '../components/catalog/QuickEvoView.jsx';
 import BulkActionFooter from '../components/catalog/BulkActionFooter.jsx';
 import './CatalogPage.css';
 
+const PAGE_SIZE = 50; // Moved constant here
+
 function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [userId, setUserId] = useState(authStore.getState().userId);
   const [mode, setMode] = useState('view');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Data State
   const [masterCatList, setMasterCatList] = useState([]);
   const [userCatMap, setUserCatMap] = useState(new Map());
   const [readyToEvolveIds, setReadyToEvolveIds] = useState(new Set());
 
-  // Initialize filters based on URL param
+  // UI State
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE); // [NEW] Lifted State
+  const [selectedCatId, setSelectedCatId] = useState(null);
+  const [selectedBulkIds, setSelectedBulkIds] = useState([]);
+  
   const [filters, setFilters] = useState(() => {
     const filterParam = searchParams.get('filter');
     return { 
@@ -32,10 +40,13 @@ function CatalogPage() {
   });
 
   const [sort, setSort] = useState({ field: 'cat_order_id', direction: 'ASC' });
-  const [selectedCatId, setSelectedCatId] = useState(null);
-  const [selectedBulkIds, setSelectedBulkIds] = useState([]);
 
-  // Listen for URL changes (e.g. if clicking dashboard link while already on catalog)
+  // [NEW] Reset visible count ONLY when filters/sort change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filters, sort]);
+
+  // URL Params Effect
   useEffect(() => {
     const filterParam = searchParams.get('filter');
     if (filterParam === 'ready') {
@@ -48,7 +59,9 @@ function CatalogPage() {
 
   const fetchPageData = useCallback(async () => {
     if (!userId) return;
+    // Only show full loading spinner on initial empty load
     if (masterCatList.length === 0) setIsLoading(true);
+    
     setError(null);
     try {
       const [staticCats, userCats, dashboardData] = await Promise.all([
@@ -87,16 +100,19 @@ function CatalogPage() {
     );
   }, [masterCatList, userCatMap, readyToEvolveIds, filters, sort]);
   
-  // --- Bulk Selection Handlers ---
-
+  // Handlers
   const handleSelectAll = () => {
-    // Select ALL cats currently matching the filters, not just the visible ones
     const allIds = filteredCatList.map(cat => cat.cat_id);
     setSelectedBulkIds(allIds);
   };
 
   const handleDeselectAll = () => {
     setSelectedBulkIds([]);
+  };
+
+  // [NEW] Handler passed to Gallery
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + PAGE_SIZE);
   };
 
   if (isLoading && masterCatList.length === 0) return <div>Loading Catalog...</div>;
@@ -122,11 +138,15 @@ function CatalogPage() {
             onCatSelect={setSelectedCatId}
             selectedBulkIds={selectedBulkIds}
             onBulkSelect={setSelectedBulkIds}
+            
+            // [NEW] Props for controlled pagination
+            visibleCount={visibleCount}
+            onLoadMore={handleLoadMore}
           />
         </div>
         <aside className="catalog-sidebar-wrapper">
           <QuickEvoView
-            key={selectedCatId}
+            key={selectedCatId} // Keeps sidebar fresh when selection changes
             catId={selectedCatId}
             userMap={userCatMap}
             onDataChange={fetchPageData} 
@@ -149,5 +169,4 @@ function CatalogPage() {
     </div>
   );
 }
-
 export default CatalogPage;
