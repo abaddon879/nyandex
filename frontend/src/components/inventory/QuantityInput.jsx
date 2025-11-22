@@ -35,39 +35,12 @@ function QuantityInput({ userId, itemId, initialQuantity, wide = false }) {
     setQuantity(prev => Math.max(0, parseInt(prev, 10) + delta));
   };
 
-  const btnStyle = {
-    border: 'none', 
-    background: '#f8fafc', 
-    width: '24px', // Reduced from 30px
-    height: '100%', 
-    cursor: 'pointer', 
-    fontWeight:'bold', 
-    color:'#64748b',
-    display:'flex', 
-    alignItems:'center', 
-    justifyContent:'center', 
-    fontSize:'0.9rem',
-    transition: 'background 0.1s',
-    padding: 0
-  };
-
   return (
-    <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        border: '1px solid #e2e8f0', 
-        borderRadius: '6px',
-        overflow: 'hidden',
-        backgroundColor: '#fff',
-        height: '30px', // Slightly shorter height
-        width: wide ? '100%' : '90px', // Reduced from 110px
-        maxWidth: '100%',
-        boxSizing: 'border-box'
-    }}>
+    <div className={`quantity-input-wrapper ${wide ? 'wide' : ''} ${isSaving ? 'saving' : ''}`}>
       <button 
         onClick={() => handleDelta(-1)} 
         disabled={isSaving}
-        style={{...btnStyle, borderRight: '1px solid #e2e8f0'}}
+        className="quantity-btn minus"
       >-</button>
       
       <input
@@ -75,25 +48,13 @@ function QuantityInput({ userId, itemId, initialQuantity, wide = false }) {
         value={quantity}
         onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value) || 0))}
         disabled={isSaving}
-        style={{ 
-            flex: 1, 
-            textAlign: 'center', 
-            border: 'none', 
-            outline: 'none', 
-            fontWeight: '600', 
-            color: '#334155', 
-            fontSize: '0.85rem',
-            mozAppearance: 'textfield',
-            background: isSaving ? '#fffbeb' : 'transparent',
-            minWidth: 0,
-            padding: 0
-        }}
+        className="quantity-field"
       />
       
       <button 
         onClick={() => handleDelta(1)} 
         disabled={isSaving}
-        style={{...btnStyle, borderLeft: '1px solid #e2e8f0'}}
+        className="quantity-btn plus"
       >+</button>
     </div>
   );

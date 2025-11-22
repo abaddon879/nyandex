@@ -54,8 +54,9 @@ function InventoryPage() {
       const userData = invMap.get(item.item_id);
       return {
         ...item,
-        owned: userData?.item_quantity || 0,
-        needed: parseInt(userData?.quantity_needed || 0),
+        // [FIX] Force Number() casting to ensure === 0 checks work
+        owned: Number(userData?.item_quantity || 0),
+        needed: Number(userData?.quantity_needed || 0),
       };
     });
   }, [staticItems, userInventory]);
@@ -63,13 +64,9 @@ function InventoryPage() {
   const sortByColor = (a, b) => {
     const nameA = a.item_name.toLowerCase();
     const nameB = b.item_name.toLowerCase();
-    
     let indexA = COLOR_ORDER.findIndex(c => nameA.includes(c));
     let indexB = COLOR_ORDER.findIndex(c => nameB.includes(c));
     
-    if (indexA === -1 && nameA.includes('relic')) indexA = COLOR_ORDER.indexOf('elder');
-    if (indexB === -1 && nameB.includes('relic')) indexB = COLOR_ORDER.indexOf('elder');
-
     if (indexA === -1) indexA = 99;
     if (indexB === -1) indexB = 99;
 
@@ -118,7 +115,6 @@ function InventoryPage() {
     result.fruit.sort(sortByColor);
     result.stones.sort(sortByColor);
     result.gems.sort(sortByColor);
-    
     result.catseyes.sort((a,b) => a.item_id - b.item_id);
     
     return result;
@@ -129,7 +125,6 @@ function InventoryPage() {
   return (
     <div className="inventory-container">
       
-      {/* 1. CURRENCIES */}
       {groups.currencies.length > 0 && (
         <section className="inventory-section">
             <div className="section-header">Currencies</div>
@@ -141,7 +136,6 @@ function InventoryPage() {
         </section>
       )}
 
-      {/* 2. EVOLUTION MATERIALS */}
       <section className="inventory-section">
           <div className="section-header">Evolution Materials</div>
           <div className="evolution-grid-layout">
@@ -152,7 +146,6 @@ function InventoryPage() {
           </div>
       </section>
 
-      {/* 3. BUILDING MATERIALS */}
       <section className="inventory-section">
           <div className="section-header">Building Materials</div>
           <div className="list-grid-layout">
@@ -161,7 +154,6 @@ function InventoryPage() {
           </div>
       </section>
 
-      {/* 4. CATSEYES */}
       {groups.catseyes.length > 0 && (
         <section className="inventory-section">
             <div className="section-header">Catseyes</div>
@@ -171,7 +163,6 @@ function InventoryPage() {
         </section>
       )}
 
-      {/* 5. OTHER */}
       <div className="list-grid-layout">
           {groups.tickets.length > 0 && (
               <SimpleListGroup title="Tickets" items={groups.tickets} userId={userId} />
@@ -210,17 +201,17 @@ function MaterialListRow({ item, userId }) {
         textClass = 'text-bad';
     } 
 
-    // [UPDATED] Aggressive Regex cleaning to solve "Purples" and "Purple Stone"
     const displayName = item.item_name
         .replace(/Behemoth\s+/i, '')
-        .replace(/\s+Seeds?/i, '')  // Matches " Seed" or " Seeds"
-        .replace(/\s+Fruits?/i, '') // Matches " Fruit" or " Fruits"
-        .replace(/\s+Stones?/i, '') // Matches " Stone" or " Stones"
-        .replace(/\s+Gems?/i, '')   // Matches " Gem" or " Gems"
+        .replace(/\s+Seeds?/i, '')
+        .replace(/\s+Fruits?/i, '')
+        .replace(/\s+Stones?/i, '')
+        .replace(/\s+Gems?/i, '')
         .replace(/\s+Catseyes?/i, '');
 
+    // [CHECK] owned is ensured to be a number now
     return (
-        <div className="list-row smart">
+        <div className={`list-row smart ${owned === 0 ? 'is-zero' : ''}`}>
             <div className="list-col-info">
                 <img src={`${BASE_URL}/items/${item.image_url}`} className="list-icon" alt="" loading="lazy"/>
                 <span className="list-name" title={item.item_name}>
@@ -258,7 +249,7 @@ function SimpleListGroup({ title, items, userId }) {
         <div className="list-panel">
             <div className="sub-section-header-row">{title}</div>
             {items.map(item => (
-                <div key={item.item_id} className="list-row simple">
+                <div key={item.item_id} className={`list-row simple ${item.owned === 0 ? 'is-zero' : ''}`}>
                     <div className="list-col-info">
                         <img src={`${BASE_URL}/items/${item.image_url}`} className="list-icon" alt="" loading="lazy"/>
                         <span className="list-name">{item.item_name}</span>

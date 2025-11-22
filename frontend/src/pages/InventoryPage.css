@@ -24,7 +24,73 @@
   border-bottom: 2px solid var(--color-border);
 }
 
-/* --- CURRENCIES --- */
+/* --- 1. QUANTITY INPUT STYLES (Refactored) --- */
+.quantity-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  borderRadius: 6px;
+  overflow: hidden;
+  background-color: #fff;
+  height: 30px; /* Compact Desktop Height */
+  width: 90px;  /* Compact Desktop Width */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.quantity-input-wrapper.wide {
+  width: 100%;
+}
+
+.quantity-input-wrapper.saving .quantity-field {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+
+.quantity-btn {
+  border: none;
+  background: #f8fafc;
+  width: 24px; /* Compact Desktop Width */
+  height: 100%;
+  cursor: pointer;
+  font-weight: bold;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: background 0.1s;
+  padding: 0;
+}
+.quantity-btn:hover { background-color: #e2e8f0; }
+.quantity-btn:active { background-color: #cbd5e1; }
+
+.quantity-btn.minus { border-right: 1px solid #e2e8f0; }
+.quantity-btn.plus  { border-left: 1px solid #e2e8f0; }
+
+.quantity-field {
+  flex: 1;
+  text-align: center;
+  border: none;
+  outline: none;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.85rem;
+  -moz-appearance: textfield;
+  background: transparent;
+  min-width: 0;
+  padding: 0;
+  height: 100%;
+}
+/* Remove arrows from number input */
+.quantity-field::-webkit-outer-spin-button,
+.quantity-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+/* --- 2. CURRENCIES --- */
 .currency-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -58,7 +124,7 @@
   font-size: 0.85rem;
 }
 
-/* --- LIST ROWS --- */
+/* --- 3. LIST ROWS --- */
 .list-panel {
   background: #fff;
   border: 1px solid var(--color-border);
@@ -69,6 +135,7 @@
   flex-direction: column;
 }
 
+/* [NEW] Sticky Sub-Header */
 .sub-section-header-row {
   background-color: var(--color-bg-secondary);
   padding: 6px 12px;
@@ -77,6 +144,10 @@
   color: #64748b;
   text-transform: uppercase;
   border-bottom: 1px solid var(--color-border);
+  
+  position: sticky; /* Sticks to top of viewport */
+  top: 0;
+  z-index: 5; /* Floats above list items */
 }
 
 .list-row {
@@ -87,14 +158,23 @@
   gap: 8px;
   min-height: 36px;
   background-color: #fff;
-  transition: background 0.1s;
+  transition: background 0.1s, opacity 0.2s;
 }
 .list-row:last-child { border-bottom: none; }
 .list-row:hover { background-color: #f8fafc; }
 
-/* --- GRID COLUMNS ADJUSTMENT --- */
+/* [NEW] Dimming Zero Items */
+.list-row.is-zero .list-icon,
+.list-row.is-zero .list-name {
+  opacity: 0.4; 
+}
+.list-row.is-zero:hover .list-icon,
+.list-row.is-zero:hover .list-name {
+  opacity: 1; /* Restore opacity on hover */
+}
+
+/* Grid Columns */
 .list-row.smart {
-  /* [UPDATED] WIDER STATUS BAR (40%) */
   /* Icon/Name | Status Bar | Input */
   grid-template-columns: 1fr 40% 90px; 
 }
@@ -135,7 +215,7 @@
 
 .status-label {
   display: flex;
-  justify-content: flex-end; /* Right align the numbers */
+  justify-content: flex-end; 
   font-size: 0.65rem;
   margin-bottom: 2px;
   font-weight: 700;
@@ -183,20 +263,36 @@
 .text-good { color: var(--color-accent-success); }
 .text-bad  { color: var(--color-accent-destructive); }
 
-/* Responsive */
+/* --- RESPONSIVE (Mobile Compliance) --- */
 @media (max-width: 1400px) {
   .evolution-grid-layout { grid-template-columns: repeat(2, 1fr); }
 }
+
 @media (max-width: 768px) {
   .evolution-grid-layout { grid-template-columns: 1fr; }
   
+  /* Stack List Rows */
   .list-row.smart {
-    grid-template-columns: 1fr 90px;
+    grid-template-columns: 1fr 110px; /* Increased for bigger input */
     grid-template-areas: "info qty" "status status";
     padding: 8px 12px;
+    min-height: 50px; /* Taller rows for fat fingers */
   }
   .list-col-info { grid-area: info; }
   .list-col-qty { grid-area: qty; }
   .list-col-status { grid-area: status; margin-top: 4px; }
   .status-label { justify-content: space-between; }
+
+  /* [NEW] Larger Tap Targets for Mobile */
+  .quantity-input-wrapper {
+    height: 36px; /* Taller */
+    width: 110px; /* Wider */
+  }
+  .quantity-btn {
+    width: 36px; /* Much easier to tap */
+    font-size: 1.1rem;
+  }
+  .quantity-field {
+    font-size: 1rem; /* Readable text */
+  }
 }
