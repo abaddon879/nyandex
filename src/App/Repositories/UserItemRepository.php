@@ -113,18 +113,21 @@ class UserItemRepository
     }
 
     /**
-     * Calculates the number of Catseyes needed to max all owned units to Level 50.
-     * Rules:
-     * - Level 30->45: 1 Eye per level
-     * - Level 45->50: 2 Eyes per level
-     * - Excludes Normal Cats (Rarity 0)
+     * Calculates the number of Catseyes needed to reach max_level.
+     * * Rules:
+     * Phase 1 (Standard Eyes - Special/Rare/Super/Uber/Legend):
+     * - Level 30 -> 45: 1 Eye per level (15 total)
+     * - Level 45 -> 50: 2 Eyes per level (10 total)
+     * * Phase 2 (Dark Eyes - Only if max_level > 50):
+     * - Level 50 -> 55: 1 Dark Eye per level (5 total)
+     * - Level 55 -> 60: 2 Dark Eyes per level (10 total)
      */
     private function calculateCatseyeDeficits(int $user_id): array
     {
         $pdo = $this->database->getConnection();
         
-        // Fetch all owned cats with their rarity and current level
-        $sql = "SELECT uc.level, c.rarity_id
+        // [UPDATED] Fetch max_level from the cat table definition
+        $sql = "SELECT uc.level, c.rarity_id, c.max_level
                 FROM user_cat uc
                 JOIN cat c ON uc.cat_id = c.cat_id
                 WHERE uc.user_id = :user_id
@@ -134,16 +137,15 @@ class UserItemRepository
         $stmt->execute(['user_id' => $user_id]);
         $cats = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Initialize counters matching Item Names
         $needed = [
             'Special' => 0,
             'Rare' => 0,
             'Super Rare' => 0,
             'Uber Rare' => 0,
-            'Legend' => 0
+            'Legend' => 0,
+            'Dark' => 0 // [NEW] Track Dark Catseyes
         ];
 
-        // Map DB rarity_id to Item Name Key
         $rarityMap = [
             1 => 'Special',
             2 => 'Rare',
@@ -153,30 +155,54 @@ class UserItemRepository
         ];
 
         foreach ($cats as $cat) {
-            $level = (int)$cat['level'];
+            $currentLevel = (int)$cat['level'];
+            $maxLevel = (int)$cat['max_level']; // e.g. 50 or 60
             $rarityKey = $rarityMap[$cat['rarity_id']] ?? null;
 
-            // Only calculate if we have a valid rarity and the cat is not yet level 50
-            if ($rarityKey && $level < 50) {
-                
-                // Logic: We assume the user WILL boost them to 30 with XP first.
-                // So we only count eyes needed from max(30, current_level).
-                $startLevel = max(30, $level);
+            if (!$rarityKey) continue;
 
-                // Phase 1: Level 30 to 45 (1 Eye per level)
-                if ($startLevel < 45) {
-                    $levelsToGain = 45 - $startLevel;
-                    $needed[$rarityKey] += $levelsToGain * 1;
+            // --- Phase 1: Standard Eyes (Up to Level 50) ---
+            // We only care if the cat CAN go above 30, and hasn't reached 50 yet.
+            // We cap this calculation at 50 or the unit's max_level, whichever is lower.
+            $phase1Cap = min(50, $maxLevel);
+            
+            if ($currentLevel < $phase1Cap) {
+                $start = max(30, $currentLevel);
+                
+                // 30 -> 45 (1 per level)
+                if ($start < 45 && $phase1Cap > 30) {
+                    $end = min(45, $phase1Cap);
+                    $needed[$rarityKey] += ($end - $start) * 1;
                 }
 
-                // Phase 2: Level 45 to 50 (2 Eyes per level)
-                // If startLevel is below 45, we still need to cover 45->50 fully.
-                // If startLevel is 47, we need 47->50.
-                $startLevelPhase2 = max(45, $startLevel);
+                // 45 -> 50 (2 per level)
+                if ($phase1Cap > 45) {
+                    $startPhase1B = max(45, $start);
+                    $end = $phase1Cap;
+                    if ($startPhase1B < $end) {
+                        $needed[$rarityKey] += ($end - $startPhase1B) * 2;
+                    }
+                }
+            }
+
+            // --- Phase 2: Dark Eyes (Level 50 to 60) ---
+            // Only applies if the unit's max_level is actually > 50
+            if ($maxLevel > 50 && $currentLevel < $maxLevel) {
+                $start = max(50, $currentLevel);
                 
-                if ($startLevelPhase2 < 50) {
-                    $levelsToGain = 50 - $startLevelPhase2;
-                    $needed[$rarityKey] += $levelsToGain * 2;
+                // 50 -> 55 (1 Dark Eye per level)
+                if ($start < 55) {
+                    $end = min(55, $maxLevel);
+                    $needed['Dark'] += ($end - $start) * 1;
+                }
+
+                // 55 -> 60 (2 Dark Eyes per level)
+                if ($maxLevel > 55) {
+                    $startPhase2B = max(55, $start);
+                    $end = $maxLevel;
+                    if ($startPhase2B < $end) {
+                        $needed['Dark'] += ($end - $startPhase2B) * 2;
+                    }
                 }
             }
         }
