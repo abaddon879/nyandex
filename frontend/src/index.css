@@ -188,3 +188,17 @@ h1, h2, h3, h4, h5, h6 {
   }
   /* The .sidebar-wrapper in AppShell handles the mobile drawer */
 }
+
+/* --- UTILS: HIDE NUMBER SPINNERS --- */
+/* Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield; /* Standard property */
+}
