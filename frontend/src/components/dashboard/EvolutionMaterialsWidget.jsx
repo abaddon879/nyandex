@@ -6,8 +6,8 @@ const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 // Visual Color Order for vertical alignment
 const COLOR_ORDER = [
   'purple', 'red', 'blue', 'green', 'yellow', 
-  'elder', 'epic', 'rainbow',                 
-  'aku', 'gold'                               
+  'epic', 'aku', 'relic',
+  'gold'                               
 ];
 
 function EvolutionMaterialsWidget({ data }) {
