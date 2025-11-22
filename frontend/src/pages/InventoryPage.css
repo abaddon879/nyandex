@@ -1,0 +1,239 @@
+/* frontend/src/pages/InventoryPage.css */
+
+.inventory-container {
+  max-width: 1600px; /* Increased max-width to utilize horizontal space */
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 4rem;
+}
+
+.inventory-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  margin-top: 1rem;
+}
+
+.inventory-title {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #1e293b;
+  font-weight: 800;
+}
+
+/* --- SEARCH BAR --- */
+.inventory-search {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  background-color: #fff;
+}
+.inventory-search:focus {
+  outline: none;
+  border-color: #facc15;
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2);
+}
+
+/* --- LAYOUT GRID (NEW) --- */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+  align-items: start; /* Prevents panels from stretching to match height */
+}
+
+/* Column Spans */
+/* Main Panels (Smart) need more width for the progress bars */
+.panel-evolution { grid-column: span 7; }
+.panel-building  { grid-column: span 5; }
+
+/* Secondary Panels (Simple) can be narrower */
+.panel-catseyes   { grid-column: span 4; }
+.panel-currencies { grid-column: span 4; }
+.panel-tickets    { grid-column: span 4; }
+
+.panel-battle { grid-column: span 6; }
+.panel-other  { grid-column: span 6; }
+
+
+/* Responsive: Laptop (stack 2 columns) */
+@media (max-width: 1200px) {
+  .panel-evolution { grid-column: span 12; }
+  .panel-building  { grid-column: span 6; }
+  .panel-catseyes  { grid-column: span 6; }
+  
+  .panel-currencies { grid-column: span 6; }
+  .panel-tickets    { grid-column: span 6; }
+}
+
+/* Responsive: Mobile (stack 1 column) */
+@media (max-width: 768px) {
+  .inventory-grid { display: flex; flexDirection: column; }
+  .inventory-row.smart {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "item qty" "status status";
+    row-gap: 12px;
+  }
+  .col-status { grid-area: status; }
+}
+
+
+/* --- INVENTORY CARD --- */
+.inventory-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  /* Remove margin-bottom since grid handles gap */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.inventory-card-header {
+  background: #f8fafc;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inventory-card-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #475569;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inventory-count {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* --- LIST ROWS --- */
+.inventory-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 500px; /* Cap height to prevent massive pages */
+  overflow-y: auto;
+}
+
+.inventory-row {
+  display: grid;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+  gap: 12px;
+}
+
+.inventory-row:last-child { border-bottom: none; }
+.inventory-row:hover { background-color: #fcfcfc; }
+
+/* Smart Panel Layout: 3 Columns */
+/* Item (Flex) | Status (30%) | Quantity (130px) */
+.inventory-row.smart {
+  grid-template-columns: 1fr 30% 130px;
+}
+
+/* Simple Panel Layout: 2 Columns */
+/* Item (Flex) | Quantity (130px) */
+.inventory-row.simple {
+  grid-template-columns: 1fr 130px;
+}
+
+
+/* --- COLUMNS --- */
+
+/* 1. Item Info */
+.col-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.item-icon-box {
+  width: 40px;
+  height: 40px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.item-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.item-name {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+/* 2. Status (Progress Bar) */
+.col-status {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.status-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.status-track {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.status-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Status Colors */
+.fill-good { background-color: #22c55e; } /* Green */
+.fill-warn { background-color: #eab308; } /* Yellow */
+.fill-bad  { background-color: #ef4444; } /* Red */
+
+.text-good { color: #16a34a; }
+.text-warn { color: #ca8a04; }
+.text-bad  { color: #dc2626; }
+
+/* 3. Quantity Input */
+.col-qty {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Scrollbar Polish */
+.inventory-list::-webkit-scrollbar { width: 6px; }
+.inventory-list::-webkit-scrollbar-track { background: transparent; }
+.inventory-list::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }

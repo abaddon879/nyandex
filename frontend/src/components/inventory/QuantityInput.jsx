@@ -1,64 +1,82 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { userTrackerService } from '../../api/userTrackerService';
-import { authStore } from '../../stores/authStore';
 
-// Custom hook to "debounce" the input
+// Hook for debouncing (prevents API spam)
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
     return () => clearTimeout(handler);
   }, [value, delay]);
   return debouncedValue;
 }
 
-/**
- * Implements Spec 4.2 / 8.5: An auto-saving input field.
- */
 function QuantityInput({ userId, itemId, initialQuantity }) {
   const [quantity, setQuantity] = useState(initialQuantity);
   const [isSaving, setIsSaving] = useState(false);
-  // Debounce the quantity for 750ms
   const debouncedQuantity = useDebounce(quantity, 750);
 
-  // This effect runs only when the *debounced* quantity changes
   useEffect(() => {
-    // Don't save on the initial render
-    if (debouncedQuantity === initialQuantity) return;
+    if (debouncedQuantity === initialQuantity) return; // Skip initial load
 
-    async function saveQuantity() {
+    async function save() {
       setIsSaving(true);
       try {
         await userTrackerService.updateItemQuantity(userId, itemId, debouncedQuantity);
-        // We'd show a success toast here
       } catch (err) {
-        console.error("Failed to save item:", err);
+        console.error("Save failed", err);
       } finally {
         setIsSaving(false);
       }
     }
-    
-    saveQuantity();
+    save();
   }, [debouncedQuantity, userId, itemId, initialQuantity]);
 
-  const handleIncrement = (amount) => {
-    setQuantity(prev => Math.max(0, parseInt(prev, 10) + amount));
+  const handleDelta = (delta) => {
+    setQuantity(prev => Math.max(0, parseInt(prev, 10) + delta));
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      <button onClick={() => handleIncrement(-1)} disabled={isSaving}>-</button>
+    <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        border: '1px solid #cbd5e1', 
+        borderRadius: '6px',
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+        height: '36px'
+    }}>
+      <button 
+        onClick={() => handleDelta(-1)} 
+        disabled={isSaving}
+        style={{
+            border: 'none', background: '#f8fafc', width: '36px', height: '100%', 
+            cursor: 'pointer', borderRight: '1px solid #cbd5e1', fontWeight:'bold', color:'#475569',
+            display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem'
+        }}
+      >-</button>
+      
       <input
         type="number"
         value={quantity}
-        onChange={(e) => setQuantity(e.target.value)}
+        onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value) || 0))}
         disabled={isSaving}
-        style={{ width: '80px', textAlign: 'center' }}
+        style={{ 
+            width: '60px', textAlign: 'center', border: 'none', outline: 'none', 
+            fontWeight: '600', color: '#334155', fontSize: '1rem',
+            mozAppearance: 'textfield' 
+        }}
       />
-      <button onClick={() => handleIncrement(1)} disabled={isSaving}>+</button>
-      {isSaving && <span style={{ fontSize: '0.8rem' }}>Saving...</span>}
+      
+      <button 
+        onClick={() => handleDelta(1)} 
+        disabled={isSaving}
+        style={{
+            border: 'none', background: '#f8fafc', width: '36px', height: '100%', 
+            cursor: 'pointer', borderLeft: '1px solid #cbd5e1', fontWeight:'bold', color:'#475569',
+            display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem'
+        }}
+      >+</button>
     </div>
   );
 }

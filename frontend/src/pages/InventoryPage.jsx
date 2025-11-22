@@ -3,18 +3,17 @@ import { authStore } from '../stores/authStore';
 import { userTrackerService } from '../api/userTrackerService';
 import { itemService } from '../api/itemService'; 
 import QuantityInput from '../components/inventory/QuantityInput.jsx';
+import './InventoryPage.css';
 
-// Robust URL handling: Ensures we point to the /items/ directory
 const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
-const ITEM_BASE_URL = RAW_BASE_URL.includes('/units') 
-  ? RAW_BASE_URL.replace('/units', '/items') 
-  : RAW_BASE_URL.replace(/\/$/, '') + '/items'; 
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function InventoryPage() {
   const [staticItems, setStaticItems] = useState([]);
   const [userInventory, setUserInventory] = useState([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [userId, setUserId] = useState(authStore.getState().userId);
 
   useEffect(() => {
@@ -26,14 +25,11 @@ function InventoryPage() {
     async function fetchData() {
       if (!userId) return;
       setIsLoading(true);
-      setError(null);
       try {
-        // Fetch static items AND the new "Smart" inventory list
         const [items, inventoryData] = await Promise.all([
           itemService.getItemDefinitions(),
           userTrackerService.getUserInventory(userId)
         ]);
-        
         setStaticItems(items);
         setUserInventory(inventoryData);
       } catch (err) {
@@ -45,127 +41,159 @@ function InventoryPage() {
     fetchData();
   }, [userId]);
 
-  // Helper map for fast lookups of the user's specific data (qty owned + qty needed)
-  const inventoryMap = useMemo(() => {
-    const map = new Map();
-    userInventory.forEach(ui => map.set(ui.item_id, ui));
-    return map;
-  }, [userInventory]);
+  const mergedItems = useMemo(() => {
+    const invMap = new Map(userInventory.map(i => [i.item_id, i]));
+    return staticItems.map(item => {
+      const userData = invMap.get(item.item_id);
+      return {
+        ...item,
+        owned: userData?.item_quantity || 0,
+        needed: parseInt(userData?.quantity_needed || 0),
+      };
+    });
+  }, [staticItems, userInventory]);
 
-  const groupedItems = useMemo(() => {
-    const groups = {
-      EvolutionItems: [],
-      Catseyes: [],
-      Currencies: [],
-      Tickets: [],
-      BattleItems: [],
+  const groups = useMemo(() => {
+    const result = {
+      evolution: { title: 'Evolution Materials', items: [], type: 'smart', className: 'panel-evolution' },
+      building: { title: 'Building Materials', items: [], type: 'smart', className: 'panel-building' },
+      catseyes: { title: 'Catseyes', items: [], type: 'smart', className: 'panel-catseyes' },
+      currencies: { title: 'Currencies', items: [], type: 'simple', className: 'panel-currencies' },
+      tickets: { title: 'Tickets', items: [], type: 'simple', className: 'panel-tickets' },
+      battle: { title: 'Battle Items', items: [], type: 'simple', className: 'panel-battle' },
+      other: { title: 'Other', items: [], type: 'simple', className: 'panel-other' }
     };
-    
-    for (const item of staticItems) {
-      switch (item.item_type) {
-        case 'Catseed':
-        case 'Catfruit':
-        case 'Material':
-        case 'Material Z':
-          groups.EvolutionItems.push(item);
-          break;
-        case 'Catseye':
-          groups.Catseyes.push(item);
-          break;
-        case 'XP':
-        case 'NP':
-        case 'Currency':
-          groups.Currencies.push(item);
-          break;
-        case 'Ticket':
-          groups.Tickets.push(item);
-          break;
-        case 'Battle Item':
-          groups.BattleItems.push(item);
-          break;
-        default:
-          break;
-      }
-    }
-    return groups;
-  }, [staticItems]);
 
-  if (isLoading) return <div style={{padding:'2rem'}}>Loading Inventory...</div>;
+    const filtered = mergedItems.filter(i => 
+      i.item_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    filtered.forEach(item => {
+        switch (item.item_type) {
+            case 'Catseed': case 'Catfruit': case 'Behemoth Stone': case 'Behemoth Gem':
+                result.evolution.items.push(item); break;
+            case 'Material': case 'Material Z':
+                result.building.items.push(item); break;
+            case 'Catseye':
+                result.catseyes.items.push(item); break;
+            case 'XP': case 'NP': case 'Currency':
+                result.currencies.items.push(item); break;
+            case 'Ticket':
+                result.tickets.items.push(item); break;
+            case 'Battle Item': case 'Catamin':
+                result.battle.items.push(item); break;
+            default:
+                result.other.items.push(item);
+        }
+    });
+
+    Object.values(result).forEach(g => g.items.sort((a, b) => a.item_id - b.item_id));
+
+    return result;
+  }, [mergedItems, searchQuery]);
+
+  if (isLoading) return <div style={{padding:'2rem', textAlign:'center'}}>Loading Inventory...</div>;
   if (error) return <div style={{padding:'2rem', color:'red'}}>Error: {error}</div>;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1>Inventory</h1>
+    <div className="inventory-container">
+      <div className="inventory-header-row">
+        <h1 className="inventory-title">Inventory</h1>
+      </div>
       
-      <input type="text" placeholder="Search inventory..." className="form-input" style={{ width: '100%', marginBottom: '1rem' }} />
+      <input 
+        type="text" 
+        placeholder="Search items..." 
+        className="inventory-search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
 
-      <ItemGroup 
-        title="Evolution Materials" 
-        items={groupedItems.EvolutionItems} 
-        inventoryMap={inventoryMap}
-        userId={userId} 
-      />
-      <ItemGroup 
-        title="Catseyes" 
-        items={groupedItems.Catseyes} 
-        inventoryMap={inventoryMap}
-        userId={userId} 
-      />
-       <ItemGroup 
-        title="Currencies" 
-        items={groupedItems.Currencies} 
-        inventoryMap={inventoryMap}
-        userId={userId} 
-      />
-      <ItemGroup 
-        title="Tickets" 
-        items={groupedItems.Tickets} 
-        inventoryMap={inventoryMap}
-        userId={userId} 
-      />
+      {/* Grid Container */}
+      <div className="inventory-grid">
+          {Object.entries(groups).map(([key, group]) => (
+            <ItemGroup 
+                key={key} 
+                title={group.title} 
+                items={group.items} 
+                isSmart={group.type === 'smart'} 
+                className={group.className} // Pass the grid class
+                userId={userId} 
+            />
+          ))}
+      </div>
     </div>
   );
 }
 
-function ItemGroup({ title, items, inventoryMap, userId }) {
+function ItemGroup({ title, items, isSmart, className, userId }) {
   if (items.length === 0) return null;
   
   return (
-    <div style={{ marginBottom: '2rem', background: '#fff', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
-      <h3 style={{ padding: '1rem', background: '#f8f9fa', borderBottom: '1px solid var(--color-border)', margin: 0, fontSize: '1.1rem' }}>{title}</h3>
-      <div>
+    <div className={`inventory-card ${className}`}>
+      <div className="inventory-card-header">
+        <h3 className="inventory-card-title">{title}</h3>
+        <span className="inventory-count">{items.length} Items</span>
+      </div>
+      <div className="inventory-list custom-scrollbar">
         {items.map(item => {
-          const userData = inventoryMap.get(item.item_id) || {};
-          const owned = userData.item_quantity || 0;
-          const needed = parseInt(userData.quantity_needed) || 0;
-          
-          // Styling for the "Needed" badge
-          const isDeficit = owned < needed;
-          
-          return (
-            <div key={item.item_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f1f1', borderRadius: '4px' }}>
-                   {item.image_url ? (
-                       <img src={`${ITEM_BASE_URL}/${item.image_url}`} alt={item.item_name} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                   ) : (
-                       <span>?</span>
-                   )}
+           const needed = item.needed;
+           const owned = item.owned;
+           const pct = needed > 0 ? Math.min(100, (owned / needed) * 100) : 0;
+           
+           let statusClass = 'fill-good';
+           let textClass = 'text-good';
+           
+           if (needed > 0 && owned < needed) {
+               statusClass = 'fill-bad';
+               textClass = 'text-bad';
+           } 
+
+           return (
+            <div key={item.item_id} className={`inventory-row ${isSmart ? 'smart' : 'simple'}`}>
+              {/* Info */}
+              <div className="col-item">
+                <div className="item-icon-box">
+                    {item.image_url ? (
+                        <img src={`${BASE_URL}/items/${item.image_url}`} alt={item.item_name} className="item-icon" />
+                    ) : (<span>?</span>)}
                 </div>
-                <div>
-                    <div style={{ fontWeight: '600' }}>{item.item_name}</div>
-                    {needed > 0 && (
-                        <div style={{ fontSize: '0.8rem', color: isDeficit ? 'var(--color-accent-destructive)' : 'var(--color-accent-success)' }}>
-                            Needed: {needed} {isDeficit ? `(Missing ${needed - owned})` : '✓'}
+                <span className="item-name">{item.item_name}</span>
+              </div>
+
+              {/* Status (Smart Only) */}
+              {isSmart && (
+                  <div className="col-status">
+                    {needed > 0 ? (
+                        <>
+                            <div className="status-label">
+                                <span className={textClass}>
+                                    {owned < needed ? `Missing ${needed - owned}` : 'Ready'}
+                                </span>
+                                <span style={{color:'#64748b'}}>
+                                    {owned} / {needed}
+                                </span>
+                            </div>
+                            <div className="status-track">
+                                <div className={`status-fill ${statusClass}`} style={{width: `${pct}%`}}></div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="status-label" style={{color:'#94a3b8', fontWeight:'normal'}}>
+                            <span>No immediate use</span>
                         </div>
                     )}
-                </div>
+                  </div>
+              )}
+
+              {/* Input */}
+              <div className="col-qty">
+                 <QuantityInput 
+                    userId={userId}
+                    itemId={item.item_id}
+                    initialQuantity={item.owned}
+                 />
               </div>
-              <QuantityInput 
-                userId={userId} 
-                itemId={item.item_id} 
-                initialQuantity={owned} 
-              />
             </div>
           );
         })}
