@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { authStore } from '../stores/authStore';
 import { userTrackerService } from '../api/userTrackerService';
 import { itemService } from '../api/itemService'; 
@@ -8,12 +9,18 @@ import './InventoryPage.css';
 const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
+const COLOR_ORDER = [
+  'purple', 'red', 'blue', 'green', 'yellow', 
+  'epic', 'aku', 'relic',
+  'gold'
+];
+
 function InventoryPage() {
+  const { searchTerm } = useOutletContext(); 
+  
   const [staticItems, setStaticItems] = useState([]);
   const [userInventory, setUserInventory] = useState([]); 
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [userId, setUserId] = useState(authStore.getState().userId);
 
   useEffect(() => {
@@ -33,7 +40,7 @@ function InventoryPage() {
         setStaticItems(items);
         setUserInventory(inventoryData);
       } catch (err) {
-        setError(err.message);
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
@@ -53,153 +60,235 @@ function InventoryPage() {
     });
   }, [staticItems, userInventory]);
 
+  const sortByColor = (a, b) => {
+    const nameA = a.item_name.toLowerCase();
+    const nameB = b.item_name.toLowerCase();
+    
+    let indexA = COLOR_ORDER.findIndex(c => nameA.includes(c));
+    let indexB = COLOR_ORDER.findIndex(c => nameB.includes(c));
+    
+    if (indexA === -1 && nameA.includes('relic')) indexA = COLOR_ORDER.indexOf('elder');
+    if (indexB === -1 && nameB.includes('relic')) indexB = COLOR_ORDER.indexOf('elder');
+
+    if (indexA === -1) indexA = 99;
+    if (indexB === -1) indexB = 99;
+
+    if (indexA === indexB) return a.item_id - b.item_id;
+    return indexA - indexB;
+  };
+
   const groups = useMemo(() => {
     const result = {
-      evolution: { title: 'Evolution Materials', items: [], type: 'smart', className: 'panel-evolution' },
-      building: { title: 'Building Materials', items: [], type: 'smart', className: 'panel-building' },
-      catseyes: { title: 'Catseyes', items: [], type: 'smart', className: 'panel-catseyes' },
-      currencies: { title: 'Currencies', items: [], type: 'simple', className: 'panel-currencies' },
-      tickets: { title: 'Tickets', items: [], type: 'simple', className: 'panel-tickets' },
-      battle: { title: 'Battle Items', items: [], type: 'simple', className: 'panel-battle' },
-      other: { title: 'Other', items: [], type: 'simple', className: 'panel-other' }
+      currencies: [],
+      seeds: [],
+      fruit: [],
+      stones: [],
+      gems: [],
+      build_normal: [],
+      build_z: [],
+      catseyes: [],
+      tickets: [],
+      other: []
     };
 
-    const filtered = mergedItems.filter(i => 
-      i.item_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const query = searchTerm || ''; 
 
-    filtered.forEach(item => {
+    mergedItems.forEach(item => {
+        const isCurrency = ['XP','NP','Currency','Catfood','Leadership'].includes(item.item_type);
+        const matchesSearch = item.item_name.toLowerCase().includes(query.toLowerCase());
+
+        if (!isCurrency && !matchesSearch) return;
+
         switch (item.item_type) {
-            case 'Catseed': case 'Catfruit': case 'Behemoth Stone': case 'Behemoth Gem':
-                result.evolution.items.push(item); break;
-            case 'Material': case 'Material Z':
-                result.building.items.push(item); break;
-            case 'Catseye':
-                result.catseyes.items.push(item); break;
-            case 'XP': case 'NP': case 'Currency':
-                result.currencies.items.push(item); break;
-            case 'Ticket':
-                result.tickets.items.push(item); break;
-            case 'Battle Item': case 'Catamin':
-                result.battle.items.push(item); break;
-            default:
-                result.other.items.push(item);
+            case 'XP': case 'NP': case 'Currency': case 'Catfood': case 'Leadership':
+                result.currencies.push(item); break;
+            case 'Catseed': result.seeds.push(item); break;
+            case 'Catfruit': result.fruit.push(item); break;
+            case 'Behemoth Stone': result.stones.push(item); break;
+            case 'Behemoth Gem': result.gems.push(item); break;
+            case 'Material': result.build_normal.push(item); break;
+            case 'Material Z': result.build_z.push(item); break;
+            case 'Catseye': result.catseyes.push(item); break;
+            case 'Ticket': result.tickets.push(item); break;
+            default: result.other.push(item);
         }
     });
 
-    Object.values(result).forEach(g => g.items.sort((a, b) => a.item_id - b.item_id));
-
+    result.seeds.sort(sortByColor);
+    result.fruit.sort(sortByColor);
+    result.stones.sort(sortByColor);
+    result.gems.sort(sortByColor);
+    
+    result.catseyes.sort((a,b) => a.item_id - b.item_id);
+    
     return result;
-  }, [mergedItems, searchQuery]);
+  }, [mergedItems, searchTerm]);
 
   if (isLoading) return <div style={{padding:'2rem', textAlign:'center'}}>Loading Inventory...</div>;
-  if (error) return <div style={{padding:'2rem', color:'red'}}>Error: {error}</div>;
 
   return (
     <div className="inventory-container">
-      <div className="inventory-header-row">
-        <h1 className="inventory-title">Inventory</h1>
-      </div>
       
-      <input 
-        type="text" 
-        placeholder="Search items..." 
-        className="inventory-search"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
+      {/* 1. CURRENCIES */}
+      {groups.currencies.length > 0 && (
+        <section className="inventory-section">
+            <div className="section-header">Currencies</div>
+            <div className="currency-row">
+                {groups.currencies.map(item => (
+                    <CurrencyCard key={item.item_id} item={item} userId={userId} />
+                ))}
+            </div>
+        </section>
+      )}
 
-      {/* Grid Container */}
-      <div className="inventory-grid">
-          {Object.entries(groups).map(([key, group]) => (
-            <ItemGroup 
-                key={key} 
-                title={group.title} 
-                items={group.items} 
-                isSmart={group.type === 'smart'} 
-                className={group.className} // Pass the grid class
-                userId={userId} 
-            />
-          ))}
+      {/* 2. EVOLUTION MATERIALS */}
+      <section className="inventory-section">
+          <div className="section-header">Evolution Materials</div>
+          <div className="evolution-grid-layout">
+             <MaterialListGroup title="Seeds" items={groups.seeds} userId={userId} />
+             <MaterialListGroup title="Catfruit" items={groups.fruit} userId={userId} />
+             <MaterialListGroup title="Behemoth Stones" items={groups.stones} userId={userId} />
+             <MaterialListGroup title="Behemoth Gems" items={groups.gems} userId={userId} />
+          </div>
+      </section>
+
+      {/* 3. BUILDING MATERIALS */}
+      <section className="inventory-section">
+          <div className="section-header">Building Materials</div>
+          <div className="list-grid-layout">
+             <SimpleListGroup title="Standard" items={groups.build_normal} userId={userId} />
+             <SimpleListGroup title="Z-Materials" items={groups.build_z} userId={userId} />
+          </div>
+      </section>
+
+      {/* 4. CATSEYES */}
+      {groups.catseyes.length > 0 && (
+        <section className="inventory-section">
+            <div className="section-header">Catseyes</div>
+            <div className="list-grid-layout">
+                <MaterialListGroup title="Catseyes" items={groups.catseyes} userId={userId} />
+            </div>
+        </section>
+      )}
+
+      {/* 5. OTHER */}
+      <div className="list-grid-layout">
+          {groups.tickets.length > 0 && (
+              <SimpleListGroup title="Tickets" items={groups.tickets} userId={userId} />
+          )}
+          {groups.other.length > 0 && (
+              <SimpleListGroup title="Other Items" items={groups.other} userId={userId} />
+          )}
       </div>
     </div>
   );
 }
 
-function ItemGroup({ title, items, isSmart, className, userId }) {
-  if (items.length === 0) return null;
-  
-  return (
-    <div className={`inventory-card ${className}`}>
-      <div className="inventory-card-header">
-        <h3 className="inventory-card-title">{title}</h3>
-        <span className="inventory-count">{items.length} Items</span>
-      </div>
-      <div className="inventory-list custom-scrollbar">
-        {items.map(item => {
-           const needed = item.needed;
-           const owned = item.owned;
-           const pct = needed > 0 ? Math.min(100, (owned / needed) * 100) : 0;
-           
-           let statusClass = 'fill-good';
-           let textClass = 'text-good';
-           
-           if (needed > 0 && owned < needed) {
-               statusClass = 'fill-bad';
-               textClass = 'text-bad';
-           } 
+/* --- COMPONENTS --- */
 
-           return (
-            <div key={item.item_id} className={`inventory-row ${isSmart ? 'smart' : 'simple'}`}>
-              {/* Info */}
-              <div className="col-item">
-                <div className="item-icon-box">
-                    {item.image_url ? (
-                        <img src={`${BASE_URL}/items/${item.image_url}`} alt={item.item_name} className="item-icon" />
-                    ) : (<span>?</span>)}
-                </div>
-                <span className="item-name">{item.item_name}</span>
-              </div>
+function MaterialListGroup({ title, items, userId }) {
+    if (!items || items.length === 0) return null;
+    return (
+        <div className="list-panel">
+            <div className="sub-section-header-row">{title}</div>
+            {items.map(item => (
+                <MaterialListRow key={item.item_id} item={item} userId={userId} />
+            ))}
+        </div>
+    );
+}
 
-              {/* Status (Smart Only) */}
-              {isSmart && (
-                  <div className="col-status">
-                    {needed > 0 ? (
-                        <>
-                            <div className="status-label">
-                                <span className={textClass}>
-                                    {owned < needed ? `Missing ${needed - owned}` : 'Ready'}
-                                </span>
-                                <span style={{color:'#64748b'}}>
-                                    {owned} / {needed}
-                                </span>
-                            </div>
-                            <div className="status-track">
-                                <div className={`status-fill ${statusClass}`} style={{width: `${pct}%`}}></div>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="status-label" style={{color:'#94a3b8', fontWeight:'normal'}}>
-                            <span>No immediate use</span>
+function MaterialListRow({ item, userId }) {
+    const needed = item.needed;
+    const owned = item.owned;
+    const pct = needed > 0 ? Math.min(100, (owned / needed) * 100) : 0;
+    
+    let statusClass = 'fill-good';
+    let textClass = 'text-good';
+    if (needed > 0 && owned < needed) {
+        statusClass = 'fill-bad';
+        textClass = 'text-bad';
+    } 
+
+    // [UPDATED] Aggressive Regex cleaning to solve "Purples" and "Purple Stone"
+    const displayName = item.item_name
+        .replace(/Behemoth\s+/i, '')
+        .replace(/\s+Seeds?/i, '')  // Matches " Seed" or " Seeds"
+        .replace(/\s+Fruits?/i, '') // Matches " Fruit" or " Fruits"
+        .replace(/\s+Stones?/i, '') // Matches " Stone" or " Stones"
+        .replace(/\s+Gems?/i, '')   // Matches " Gem" or " Gems"
+        .replace(/\s+Catseyes?/i, '');
+
+    return (
+        <div className="list-row smart">
+            <div className="list-col-info">
+                <img src={`${BASE_URL}/items/${item.image_url}`} className="list-icon" alt="" loading="lazy"/>
+                <span className="list-name" title={item.item_name}>
+                    {displayName}
+                </span>
+            </div>
+            <div className="list-col-status">
+                {needed > 0 ? (
+                    <>
+                        <div className="status-label">
+                            <span className={textClass}>
+                                {owned}/{needed}
+                            </span>
                         </div>
-                    )}
-                  </div>
-              )}
+                        <div className="status-track">
+                            <div className={`status-fill ${statusClass}`} style={{width: `${pct}%`}}></div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="status-label" style={{color:'#cbd5e1', fontWeight:'normal'}}>
+                        <span>—</span>
+                    </div>
+                )}
+            </div>
+            <div className="list-col-qty">
+                <QuantityInput userId={userId} itemId={item.item_id} initialQuantity={owned} />
+            </div>
+        </div>
+    );
+}
 
-              {/* Input */}
-              <div className="col-qty">
-                 <QuantityInput 
+function SimpleListGroup({ title, items, userId }) {
+    if (!items || items.length === 0) return null;
+    return (
+        <div className="list-panel">
+            <div className="sub-section-header-row">{title}</div>
+            {items.map(item => (
+                <div key={item.item_id} className="list-row simple">
+                    <div className="list-col-info">
+                        <img src={`${BASE_URL}/items/${item.image_url}`} className="list-icon" alt="" loading="lazy"/>
+                        <span className="list-name">{item.item_name}</span>
+                    </div>
+                    <div className="list-col-qty">
+                        <QuantityInput userId={userId} itemId={item.item_id} initialQuantity={item.owned} />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function CurrencyCard({ item, userId }) {
+    return (
+        <div className="currency-card">
+            <div className="currency-header">
+                <img src={`${BASE_URL}/items/${item.image_url}`} style={{width:24, height:24}} alt="" />
+                <span className="currency-name">{item.item_name}</span>
+            </div>
+            <div style={{marginLeft: 'auto'}}>
+                <QuantityInput 
                     userId={userId}
                     itemId={item.item_id}
                     initialQuantity={item.owned}
-                 />
-              </div>
+                    wide={false}
+                />
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+        </div>
+    );
 }
 
 export default InventoryPage;
