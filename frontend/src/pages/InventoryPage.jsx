@@ -9,6 +9,7 @@ import './InventoryPage.css';
 const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
+// [RESTORED] The correct color order including 'relic'
 const COLOR_ORDER = [
   'purple', 'red', 'blue', 'green', 'yellow', 
   'epic', 'aku', 'relic',
@@ -54,26 +55,37 @@ function InventoryPage() {
       const userData = invMap.get(item.item_id);
       return {
         ...item,
-        // [FIX] Force Number() casting to ensure === 0 checks work
         owned: Number(userData?.item_quantity || 0),
         needed: Number(userData?.quantity_needed || 0),
       };
     });
   }, [staticItems, userInventory]);
 
+  // --- Sorting Helper ---
   const sortByColor = (a, b) => {
     const nameA = a.item_name.toLowerCase();
     const nameB = b.item_name.toLowerCase();
+    
+    // Find index based on substring match
     let indexA = COLOR_ORDER.findIndex(c => nameA.includes(c));
     let indexB = COLOR_ORDER.findIndex(c => nameB.includes(c));
     
+    // Logic to map "Relic" items to the "Elder" sort position if needed, 
+    // but 'relic' is now in the list so this just handles fallbacks
+    if (indexA === -1 && nameA.includes('relic')) indexA = COLOR_ORDER.indexOf('relic');
+    if (indexB === -1 && nameB.includes('relic')) indexB = COLOR_ORDER.indexOf('relic');
+
+    // Items not in the list go to the end
     if (indexA === -1) indexA = 99;
     if (indexB === -1) indexB = 99;
 
+    // If colors match (or both unknown), sort by ID
     if (indexA === indexB) return a.item_id - b.item_id;
+    
     return indexA - indexB;
   };
 
+  // --- Grouping Logic ---
   const groups = useMemo(() => {
     const result = {
       currencies: [],
@@ -111,10 +123,13 @@ function InventoryPage() {
         }
     });
 
+    // Apply Custom Color Order
     result.seeds.sort(sortByColor);
     result.fruit.sort(sortByColor);
     result.stones.sort(sortByColor);
     result.gems.sort(sortByColor);
+    
+    // Standard sort for others
     result.catseyes.sort((a,b) => a.item_id - b.item_id);
     
     return result;
@@ -125,6 +140,7 @@ function InventoryPage() {
   return (
     <div className="inventory-container">
       
+      {/* 1. CURRENCIES (Top Row) */}
       {groups.currencies.length > 0 && (
         <section className="inventory-section">
             <div className="section-header">Currencies</div>
@@ -136,6 +152,7 @@ function InventoryPage() {
         </section>
       )}
 
+      {/* 2. EVOLUTION MATERIALS (4-Column) */}
       <section className="inventory-section">
           <div className="section-header">Evolution Materials</div>
           <div className="evolution-grid-layout">
@@ -146,14 +163,7 @@ function InventoryPage() {
           </div>
       </section>
 
-      <section className="inventory-section">
-          <div className="section-header">Building Materials</div>
-          <div className="list-grid-layout">
-             <SimpleListGroup title="Standard" items={groups.build_normal} userId={userId} />
-             <SimpleListGroup title="Z-Materials" items={groups.build_z} userId={userId} />
-          </div>
-      </section>
-
+      {/* 3. CATSEYES (Moved Up) */}
       {groups.catseyes.length > 0 && (
         <section className="inventory-section">
             <div className="section-header">Catseyes</div>
@@ -163,6 +173,16 @@ function InventoryPage() {
         </section>
       )}
 
+      {/* 4. BUILDING MATERIALS (Moved Down) */}
+      <section className="inventory-section">
+          <div className="section-header">Building Materials</div>
+          <div className="list-grid-layout">
+             <SimpleListGroup title="Standard" items={groups.build_normal} userId={userId} />
+             <SimpleListGroup title="Z-Materials" items={groups.build_z} userId={userId} />
+          </div>
+      </section>
+
+      {/* 5. OTHER */}
       <div className="list-grid-layout">
           {groups.tickets.length > 0 && (
               <SimpleListGroup title="Tickets" items={groups.tickets} userId={userId} />
@@ -201,6 +221,7 @@ function MaterialListRow({ item, userId }) {
         textClass = 'text-bad';
     } 
 
+    // Aggressive Regex cleaning
     const displayName = item.item_name
         .replace(/Behemoth\s+/i, '')
         .replace(/\s+Seeds?/i, '')
@@ -209,7 +230,6 @@ function MaterialListRow({ item, userId }) {
         .replace(/\s+Gems?/i, '')
         .replace(/\s+Catseyes?/i, '');
 
-    // [CHECK] owned is ensured to be a number now
     return (
         <div className={`list-row smart ${owned === 0 ? 'is-zero' : ''}`}>
             <div className="list-col-info">
