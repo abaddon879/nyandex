@@ -9,11 +9,17 @@ import './InventoryPage.css';
 const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
-// [RESTORED] The correct color order including 'relic'
+// 1. Correct Color Order
 const COLOR_ORDER = [
   'purple', 'red', 'blue', 'green', 'yellow', 
   'epic', 'aku', 'relic',
   'gold'
+];
+
+// 2. Currency Sort Order
+const CURRENCY_SORT_ORDER = [
+  'XP', 'NP', 'Catfood', 'Leadership', 
+  'Cat Ticket', 'Rare Ticket', 'Platinum Ticket', 'Legend Ticket'
 ];
 
 function InventoryPage() {
@@ -61,31 +67,23 @@ function InventoryPage() {
     });
   }, [staticItems, userInventory]);
 
-  // --- Sorting Helper ---
   const sortByColor = (a, b) => {
     const nameA = a.item_name.toLowerCase();
     const nameB = b.item_name.toLowerCase();
     
-    // Find index based on substring match
     let indexA = COLOR_ORDER.findIndex(c => nameA.includes(c));
     let indexB = COLOR_ORDER.findIndex(c => nameB.includes(c));
     
-    // Logic to map "Relic" items to the "Elder" sort position if needed, 
-    // but 'relic' is now in the list so this just handles fallbacks
     if (indexA === -1 && nameA.includes('relic')) indexA = COLOR_ORDER.indexOf('relic');
     if (indexB === -1 && nameB.includes('relic')) indexB = COLOR_ORDER.indexOf('relic');
 
-    // Items not in the list go to the end
     if (indexA === -1) indexA = 99;
     if (indexB === -1) indexB = 99;
 
-    // If colors match (or both unknown), sort by ID
     if (indexA === indexB) return a.item_id - b.item_id;
-    
     return indexA - indexB;
   };
 
-  // --- Grouping Logic ---
   const groups = useMemo(() => {
     const result = {
       currencies: [],
@@ -95,21 +93,26 @@ function InventoryPage() {
       gems: [],
       build_normal: [],
       build_z: [],
+      engineers: [],
       catseyes: [],
-      tickets: [],
       other: []
     };
 
     const query = searchTerm || ''; 
 
     mergedItems.forEach(item => {
-        const isCurrency = ['XP','NP','Currency','Catfood','Leadership'].includes(item.item_type);
+        const isCurrency = ['XP','NP','Currency','Catfood','Leadership','Ticket'].includes(item.item_type);
         const matchesSearch = item.item_name.toLowerCase().includes(query.toLowerCase());
 
         if (!isCurrency && !matchesSearch) return;
 
+        if (item.item_name.includes('Engineer')) {
+            result.engineers.push(item);
+            return;
+        }
+
         switch (item.item_type) {
-            case 'XP': case 'NP': case 'Currency': case 'Catfood': case 'Leadership':
+            case 'XP': case 'NP': case 'Currency': case 'Catfood': case 'Leadership': case 'Ticket':
                 result.currencies.push(item); break;
             case 'Catseed': result.seeds.push(item); break;
             case 'Catfruit': result.fruit.push(item); break;
@@ -118,19 +121,26 @@ function InventoryPage() {
             case 'Material': result.build_normal.push(item); break;
             case 'Material Z': result.build_z.push(item); break;
             case 'Catseye': result.catseyes.push(item); break;
-            case 'Ticket': result.tickets.push(item); break;
-            default: result.other.push(item);
+            case 'Battle Item': case 'Catamin': default:
+                result.other.push(item); break;
         }
     });
 
-    // Apply Custom Color Order
     result.seeds.sort(sortByColor);
     result.fruit.sort(sortByColor);
     result.stones.sort(sortByColor);
     result.gems.sort(sortByColor);
-    
-    // Standard sort for others
     result.catseyes.sort((a,b) => a.item_id - b.item_id);
+    result.other.sort((a,b) => a.item_id - b.item_id);
+    
+    result.currencies.sort((a, b) => {
+        const getSortIndex = (name) => {
+            const baseName = name.replace('Tickets', 'Ticket');
+            const idx = CURRENCY_SORT_ORDER.indexOf(baseName);
+            return idx === -1 ? 99 : idx;
+        };
+        return getSortIndex(a.item_name) - getSortIndex(b.item_name);
+    });
     
     return result;
   }, [mergedItems, searchTerm]);
@@ -140,10 +150,10 @@ function InventoryPage() {
   return (
     <div className="inventory-container">
       
-      {/* 1. CURRENCIES (Top Row) */}
+      {/* 1. CURRENCIES */}
       {groups.currencies.length > 0 && (
         <section className="inventory-section">
-            <div className="section-header">Currencies</div>
+            <div className="section-header">Currencies & Tickets</div>
             <div className="currency-row">
                 {groups.currencies.map(item => (
                     <CurrencyCard key={item.item_id} item={item} userId={userId} />
@@ -152,7 +162,7 @@ function InventoryPage() {
         </section>
       )}
 
-      {/* 2. EVOLUTION MATERIALS (4-Column) */}
+      {/* 2. EVOLUTION MATERIALS */}
       <section className="inventory-section">
           <div className="section-header">Evolution Materials</div>
           <div className="evolution-grid-layout">
@@ -163,34 +173,56 @@ function InventoryPage() {
           </div>
       </section>
 
-      {/* 3. CATSEYES (Moved Up) */}
+      {/* 3. CATSEYES */}
       {groups.catseyes.length > 0 && (
         <section className="inventory-section">
             <div className="section-header">Catseyes</div>
-            <div className="list-grid-layout">
-                <MaterialListGroup title="Catseyes" items={groups.catseyes} userId={userId} />
+            <div className="three-column-grid">
+                {groups.catseyes.map(item => (
+                    <MaterialListRow 
+                        key={item.item_id} 
+                        item={item} 
+                        userId={userId} 
+                        asCard={true} 
+                    />
+                ))}
             </div>
         </section>
       )}
 
-      {/* 4. BUILDING MATERIALS (Moved Down) */}
+      {/* 4. BUILDING MATERIALS */}
       <section className="inventory-section">
           <div className="section-header">Building Materials</div>
           <div className="list-grid-layout">
              <SimpleListGroup title="Standard" items={groups.build_normal} userId={userId} />
              <SimpleListGroup title="Z-Materials" items={groups.build_z} userId={userId} />
           </div>
+          
+          {/* Engineers */}
+          {groups.engineers.length > 0 && (
+             <div style={{marginTop: '12px'}}>
+                <SimpleListGroup title="Base Development" items={groups.engineers} userId={userId} />
+             </div>
+          )}
       </section>
 
-      {/* 5. OTHER */}
-      <div className="list-grid-layout">
-          {groups.tickets.length > 0 && (
-              <SimpleListGroup title="Tickets" items={groups.tickets} userId={userId} />
-          )}
-          {groups.other.length > 0 && (
-              <SimpleListGroup title="Other Items" items={groups.other} userId={userId} />
-          )}
-      </div>
+      {/* 5. OTHER ITEMS (Converted to 3-Column Grid) */}
+      {groups.other.length > 0 && (
+        <section className="inventory-section">
+            <div className="section-header">Other Items</div>
+            <div className="three-column-grid">
+                {groups.other.map(item => (
+                    // [NEW] Use SimpleListRow but with card styling
+                    <SimpleListRow 
+                        key={item.item_id} 
+                        item={item} 
+                        userId={userId} 
+                        asCard={true} 
+                    />
+                ))}
+            </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -209,7 +241,7 @@ function MaterialListGroup({ title, items, userId }) {
     );
 }
 
-function MaterialListRow({ item, userId }) {
+function MaterialListRow({ item, userId, asCard = false }) {
     const needed = item.needed;
     const owned = item.owned;
     const pct = needed > 0 ? Math.min(100, (owned / needed) * 100) : 0;
@@ -221,7 +253,6 @@ function MaterialListRow({ item, userId }) {
         textClass = 'text-bad';
     } 
 
-    // Aggressive Regex cleaning
     const displayName = item.item_name
         .replace(/Behemoth\s+/i, '')
         .replace(/\s+Seeds?/i, '')
@@ -230,8 +261,15 @@ function MaterialListRow({ item, userId }) {
         .replace(/\s+Gems?/i, '')
         .replace(/\s+Catseyes?/i, '');
 
+    const rowClasses = [
+        'list-row',
+        'smart',
+        owned === 0 ? 'is-zero' : '',
+        asCard ? 'is-card' : ''
+    ].join(' ');
+
     return (
-        <div className={`list-row smart ${owned === 0 ? 'is-zero' : ''}`}>
+        <div className={rowClasses}>
             <div className="list-col-info">
                 <img src={`${BASE_URL}/items/${item.image_url}`} className="list-icon" alt="" loading="lazy"/>
                 <span className="list-name" title={item.item_name}>
@@ -269,16 +307,30 @@ function SimpleListGroup({ title, items, userId }) {
         <div className="list-panel">
             <div className="sub-section-header-row">{title}</div>
             {items.map(item => (
-                <div key={item.item_id} className={`list-row simple ${item.owned === 0 ? 'is-zero' : ''}`}>
-                    <div className="list-col-info">
-                        <img src={`${BASE_URL}/items/${item.image_url}`} className="list-icon" alt="" loading="lazy"/>
-                        <span className="list-name">{item.item_name}</span>
-                    </div>
-                    <div className="list-col-qty">
-                        <QuantityInput userId={userId} itemId={item.item_id} initialQuantity={item.owned} />
-                    </div>
-                </div>
+                <SimpleListRow key={item.item_id} item={item} userId={userId} />
             ))}
+        </div>
+    );
+}
+
+// [NEW] Component for Simple Rows (like Building Materials / Other)
+function SimpleListRow({ item, userId, asCard = false }) {
+    const rowClasses = [
+        'list-row',
+        'simple',
+        item.owned === 0 ? 'is-zero' : '',
+        asCard ? 'is-card' : ''
+    ].join(' ');
+
+    return (
+        <div className={rowClasses}>
+            <div className="list-col-info">
+                <img src={`${BASE_URL}/items/${item.image_url}`} className="list-icon" alt="" loading="lazy"/>
+                <span className="list-name">{item.item_name}</span>
+            </div>
+            <div className="list-col-qty">
+                <QuantityInput userId={userId} itemId={item.item_id} initialQuantity={item.owned} />
+            </div>
         </div>
     );
 }

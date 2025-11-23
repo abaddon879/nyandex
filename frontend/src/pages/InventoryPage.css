@@ -24,16 +24,16 @@
   border-bottom: 2px solid var(--color-border);
 }
 
-/* --- 1. QUANTITY INPUT STYLES (Refactored) --- */
+/* --- 1. QUANTITY INPUT STYLES --- */
 .quantity-input-wrapper {
   display: flex;
   align-items: center;
   border: 1px solid #e2e8f0;
-  borderRadius: 6px;
+  border-radius: 6px;
   overflow: hidden;
   background-color: #fff;
-  height: 30px; /* Compact Desktop Height */
-  width: 90px;  /* Compact Desktop Width */
+  height: 30px; 
+  width: 90px;  
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -50,7 +50,7 @@
 .quantity-btn {
   border: none;
   background: #f8fafc;
-  width: 24px; /* Compact Desktop Width */
+  width: 24px; 
   height: 100%;
   cursor: pointer;
   font-weight: bold;
@@ -82,18 +82,17 @@
   padding: 0;
   height: 100%;
 }
-/* Remove arrows from number input */
 .quantity-field::-webkit-outer-spin-button,
 .quantity-field::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-
-/* --- 2. CURRENCIES --- */
+/* --- 2. CURRENCIES (4-COLUMN FIXED GRID) --- */
 .currency-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  /* [UPDATED] Enforce 4 columns to keep Tickets aligned on row 2 */
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 0.5rem;
 }
@@ -102,13 +101,18 @@
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 6px 16px;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  min-height: 40px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  min-height: 36px;
+}
+.currency-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
 }
 
 .currency-header {
@@ -124,18 +128,24 @@
   font-size: 0.85rem;
 }
 
-/* --- 3. LIST ROWS --- */
+/* --- 3. 3-COLUMN GRID (Catseyes / Other) --- */
+.three-column-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* --- 4. LIST ROWS --- */
 .list-panel {
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
-/* [NEW] Sticky Sub-Header */
 .sub-section-header-row {
   background-color: var(--color-bg-secondary);
   padding: 6px 12px;
@@ -145,9 +155,11 @@
   text-transform: uppercase;
   border-bottom: 1px solid var(--color-border);
   
-  position: sticky; /* Sticks to top of viewport */
+  position: sticky;
   top: 0;
-  z-index: 5; /* Floats above list items */
+  z-index: 5;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 
 .list-row {
@@ -163,26 +175,42 @@
 .list-row:last-child { border-bottom: none; }
 .list-row:hover { background-color: #f8fafc; }
 
-/* [NEW] Dimming Zero Items */
+/* Card Variant */
+.list-row.is-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  border-bottom: 1px solid var(--color-border); 
+  margin-bottom: 0;
+  padding: 6px 16px;
+}
+.list-row.is-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
+  z-index: 2;
+}
+
+/* Dimming Zero Items */
 .list-row.is-zero .list-icon,
 .list-row.is-zero .list-name {
   opacity: 0.4; 
 }
 .list-row.is-zero:hover .list-icon,
 .list-row.is-zero:hover .list-name {
-  opacity: 1; /* Restore opacity on hover */
+  opacity: 1; 
 }
 
-/* Grid Columns */
+/* --- GRID COLUMNS --- */
 .list-row.smart {
-  /* Icon/Name | Status Bar | Input */
+  /* Icon/Name | Status Bar (40%) | Input */
   grid-template-columns: 1fr 40% 90px; 
 }
 .list-row.simple {
   grid-template-columns: 1fr 90px;
 }
 
-/* --- COLUMNS --- */
+/* --- COLUMNS CONTENT --- */
 .list-col-info {
   display: flex;
   align-items: center;
@@ -263,36 +291,30 @@
 .text-good { color: var(--color-accent-success); }
 .text-bad  { color: var(--color-accent-destructive); }
 
-/* --- RESPONSIVE (Mobile Compliance) --- */
+/* --- RESPONSIVE --- */
 @media (max-width: 1400px) {
   .evolution-grid-layout { grid-template-columns: repeat(2, 1fr); }
+  .three-column-grid { grid-template-columns: repeat(2, 1fr); }
+  .currency-row { grid-template-columns: repeat(2, 1fr); } /* Break to 2x4 on laptop */
 }
 
 @media (max-width: 768px) {
   .evolution-grid-layout { grid-template-columns: 1fr; }
+  .three-column-grid { grid-template-columns: 1fr; }
+  .currency-row { grid-template-columns: 1fr; }
   
-  /* Stack List Rows */
   .list-row.smart {
-    grid-template-columns: 1fr 110px; /* Increased for bigger input */
+    grid-template-columns: 1fr 110px;
     grid-template-areas: "info qty" "status status";
     padding: 8px 12px;
-    min-height: 50px; /* Taller rows for fat fingers */
+    min-height: 50px;
   }
   .list-col-info { grid-area: info; }
   .list-col-qty { grid-area: qty; }
   .list-col-status { grid-area: status; margin-top: 4px; }
   .status-label { justify-content: space-between; }
 
-  /* [NEW] Larger Tap Targets for Mobile */
-  .quantity-input-wrapper {
-    height: 36px; /* Taller */
-    width: 110px; /* Wider */
-  }
-  .quantity-btn {
-    width: 36px; /* Much easier to tap */
-    font-size: 1.1rem;
-  }
-  .quantity-field {
-    font-size: 1rem; /* Readable text */
-  }
+  .quantity-input-wrapper { height: 36px; width: 110px; }
+  .quantity-btn { width: 36px; font-size: 1.1rem; }
+  .quantity-field { font-size: 1rem; }
 }
