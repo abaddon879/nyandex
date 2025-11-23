@@ -256,10 +256,12 @@ function CatDetailPage() {
                                         {/* Requirements */}
                                         {form.evolution.requirements.map(req => {
                                             const owned = inventoryMap.get(req.item_id) || 0;
+                                            const displayOwned = Math.min(owned, req.item_qty); // [UPDATED]
+
                                             return (
                                                 <div key={req.item_id} className={`req-badge ${owned >= req.item_qty ? 'met' : 'unmet'}`} title={req.item_name}>
                                                     <img src={`${BASE_URL}/items/${req.image_url}`} alt={req.item_name} className="req-icon" />
-                                                    <span>{owned}/{req.item_qty}</span>
+                                                    <span>{displayOwned}/{req.item_qty}</span>
                                                 </div>
                                             )
                                         })}

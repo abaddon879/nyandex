@@ -37,6 +37,7 @@ const StatCalculator = {
 };
 
 function QuickEvoView({ catId, userMap, onDataChange }) {
+  // ... (State and Fetch logic remains exactly the same) ...
   const { userId } = authStore.getState();
 
   const [staticData, setStaticData] = useState(null);
@@ -105,20 +106,15 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     fetchData();
   }, [fetchData]);
 
-  // [FIXED] Robust Finder: Uses Item Type instead of Name matching
+  // ... (findCatseyeData, handleFormClick, handleSave, handleToggle, currentForm, nextForm logic remains same) ...
   const findCatseyeData = (keyword) => {
-      // 1. Backend Priority
       if (staticData && staticData.catseyes) {
           if (keyword === 'Dark' && staticData.catseyes.dark) return staticData.catseyes.dark;
           if (keyword !== 'Dark' && staticData.catseyes.standard && staticData.catseyes.standard.item_name.includes(keyword)) {
               return staticData.catseyes.standard;
           }
       }
-      
-      // 2. Frontend Fallback (Filter by Type first, then Name)
       if (!inventoryList) return null;
-      
-      // We filter for type 'Catseye' first, so we don't accidentally match a cat unit name
       const found = inventoryList.find(i => 
           i.item_type === 'Catseye' && i.item_name.includes(keyword)
       );
@@ -181,7 +177,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     return staticData.forms[currentIndex + 1] || null;
   }, [staticData, currentForm]);
 
-
   const getMissingLevelRequirements = () => {
       if (!nextForm || !nextForm.evolution) return [];
       
@@ -203,7 +198,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
           return reqs;
       }
 
-      // 1. Standard Eyes
       let stdEyes = 0;
       const stdStart = Math.max(30, currentBase);
       const stdEnd = Math.min(50, targetBase);
@@ -215,10 +209,9 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
 
       if (stdEyes > 0) {
           const itemData = findCatseyeData(rarityName);
-          // Use item data if found, otherwise fallback config
           const name = itemData ? itemData.item_name : `${rarityName} Catseye`;
           const image = itemData ? itemData.image_url : CATSEYE_FALLBACK_IMAGES[rarityName];
-          const owned = itemData ? (inventoryMap.get(itemData.item_id) || 0) : 0;
+          const owned = itemData ? Number(itemData.item_quantity) : 0;
           
           reqs.push({ 
               type: 'item', 
@@ -229,12 +222,10 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
           });
       }
 
-      // 2. Dark Eyes
       let darkEyes = 0;
       if (targetBase > 50) {
           const darkStart = Math.max(50, currentBase);
           const darkEnd = Math.min(60, targetBase);
-
           if (darkStart < 55) darkEyes += (Math.min(55, darkEnd) - darkStart) * 1;
           if (darkEnd > 55)   darkEyes += (darkEnd - Math.max(55, darkStart)) * 2;
       }
@@ -243,7 +234,7 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
           const itemData = findCatseyeData('Dark');
           const name = itemData ? itemData.item_name : 'Dark Catseye';
           const image = itemData ? itemData.image_url : CATSEYE_FALLBACK_IMAGES['Dark'];
-          const owned = itemData ? (inventoryMap.get(itemData.item_id) || 0) : 0;
+          const owned = itemData ? Number(itemData.item_quantity) : 0;
 
           reqs.push({ 
               type: 'item', 
@@ -257,7 +248,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
       return reqs;
   };
 
-  // ... (Render Code unchanged) ...
 
   if (catId === null || catId === undefined) return <div className="quick-evo-view" style={{textAlign:'center', paddingTop:'4rem'}}><p className="text-secondary">Select a cat...</p></div>;
   if (isLoading) return <div className="quick-evo-view">Loading...</div>;
@@ -336,10 +326,13 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
             </div>
             <div className="quick-evo-body requirements-list">
                 
+                {/* 1. Level & Catseye Requirements */}
                 {levelReqs.map((req, idx) => {
                     if (req.type === 'item') {
                         const isComplete = req.owned >= req.needed;
                         const pct = req.needed > 0 ? Math.min(100, (req.owned / req.needed) * 100) : 100;
+                        // [UPDATED] Clamped Display Value
+                        const displayOwned = Math.min(req.owned, req.needed);
                         
                         return (
                             <div key={`eye-${idx}`} style={{ marginTop: '8px' }}>
@@ -353,7 +346,7 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                                         <span>{req.name}</span>
                                     </div>
                                     <span className={isComplete ? 'text-success' : 'text-destructive'} style={{fontWeight: isComplete ? '400' : '700'}}>
-                                        {req.owned} / {req.needed}
+                                        {displayOwned} / {req.needed}
                                     </span>
                                 </div>
                                 <div className="progress-track" style={{ height: '6px', marginTop: '2px' }}>
@@ -367,7 +360,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                         <div key={`lvl-${idx}`} className={`requirement-item ${req.type === 'met' ? 'is-complete' : (req.type === 'stage' ? 'is-stage' : 'is-missing')}`}>
                             {req.type === 'level' && (
                                 <>
-                                    {/* [FIX] Removed "Lvl" badge */}
                                     <span style={{ fontWeight: '700' }}>{req.label}</span>
                                     {req.isComplete ? ' ✓' : <span style={{marginLeft:'auto', fontSize:'0.8rem'}}>+{req.missing}</span>}
                                 </>
@@ -379,10 +371,14 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                     );
                 })}
 
+                {/* 2. Standard Item Requirements */}
                 {nextForm.evolution && nextForm.evolution.requirements.map(req => {
                   const userQty = inventoryMap.get(req.item_id) || 0;
                   const isComplete = userQty >= req.item_qty;
                   const percent = Math.min(100, (userQty / req.item_qty) * 100);
+                  // [UPDATED] Clamped Display Value
+                  const displayOwned = Math.min(userQty, req.item_qty);
+
                   return (
                     <div key={req.item_id} style={{ marginTop: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
@@ -391,7 +387,7 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                             <span>{req.item_name}</span>
                         </div>
                         <span className={isComplete ? 'text-success' : 'text-destructive'} style={{fontWeight: isComplete ? '400' : '700'}}>
-                            {userQty} / {req.item_qty}
+                            {displayOwned} / {req.item_qty}
                         </span>
                       </div>
                       <div className="progress-track" style={{ height: '6px', marginTop: '2px' }}>
