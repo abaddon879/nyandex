@@ -2,6 +2,16 @@ import React from 'react';
 import { Link, useMatches, useLocation } from 'react-router-dom';
 import AccountDropdown from './AccountDropdown.jsx';
 
+// Component to hold the Material Icon.
+const MaterialIcon = ({ name, style = {} }) => (
+    <span 
+        className="material-symbols-outlined" 
+        style={{ fontSize: '1.5rem', ...style }}
+    >
+        {name}
+    </span>
+);
+
 function SubtleTopHeaderBar({ onToggleMenu, searchTerm, onSearchChange }) {
   const matches = useMatches();
   const location = useLocation();
@@ -19,7 +29,7 @@ function SubtleTopHeaderBar({ onToggleMenu, searchTerm, onSearchChange }) {
             onClick={onToggleMenu}
             aria-label="Toggle Menu"
         >
-            ☰
+            <MaterialIcon name="menu" />
         </button>
         
         <h1 style={{ margin: 0, fontSize: '1.25rem', whiteSpace:'nowrap' }}>{pageTitle}</h1>
@@ -41,7 +51,7 @@ function SubtleTopHeaderBar({ onToggleMenu, searchTerm, onSearchChange }) {
       
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         <Link to="/help" style={{ textDecoration: 'none', color: 'var(--color-text-secondary)' }}>
-            [?] Help
+          <MaterialIcon name="help" />
         </Link>
         <AccountDropdown />
       </div>

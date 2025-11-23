@@ -45,7 +45,8 @@ function CatalogFilterPanel({ filters, setFilters, onClose }) {
       search: '',
       rarity: [],
       ownership: 'all',
-      status: { readyToEvolve: false }
+      // [UPDATED] Reset both status flags
+      status: { readyToEvolve: false, hasEvolution: false }
     });
   };
 
@@ -70,7 +71,7 @@ function CatalogFilterPanel({ filters, setFilters, onClose }) {
 
   return (
     <div style={panelStyle}>
-      {/* 1. Ownership Filters (Spec 4: 582) */}
+      {/* 1. Ownership Filters */}
       <div>
         <div style={sectionTitleStyle}>Ownership</div>
         <div style={{ display: 'flex', gap: '1rem' }}>
@@ -90,23 +91,38 @@ function CatalogFilterPanel({ filters, setFilters, onClose }) {
         </div>
       </div>
 
-      {/* 2. Status Filters (Spec 4: 583) */}
+      {/* 2. Status Filters */}
       <div>
         <div style={sectionTitleStyle}>Status</div>
-        <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <input 
-            type="checkbox" 
-            checked={filters.status.readyToEvolve} 
-            onChange={() => handleStatusChange('readyToEvolve')}
-          />
-          Ready to Evolve
-          <span title="Shows cats that meet level AND item requirements for next evolution" style={{ cursor: 'help', color: 'var(--color-accent-info)' }}>
-            [?]
-          </span>
-        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input 
+                type="checkbox" 
+                checked={filters.status.readyToEvolve} 
+                onChange={() => handleStatusChange('readyToEvolve')}
+              />
+              Ready to Evolve
+              <span title="Shows cats that meet level AND item requirements for next evolution" style={{ cursor: 'help', color: 'var(--color-accent-info)' }}>
+                [?]
+              </span>
+            </label>
+
+            {/* [NEW] Has Next Evolution Filter */}
+            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input 
+                type="checkbox" 
+                checked={filters.status.hasEvolution} 
+                onChange={() => handleStatusChange('hasEvolution')}
+              />
+              Has Next Evolution
+              <span title="Shows owned cats that have not yet reached their final form" style={{ cursor: 'help', color: 'var(--color-accent-info)' }}>
+                [?]
+              </span>
+            </label>
+        </div>
       </div>
 
-      {/* 3. Rarity Filters (Spec 4: 579) */}
+      {/* 3. Rarity Filters */}
       <div>
         <div style={sectionTitleStyle}>Rarity</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>

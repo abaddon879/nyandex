@@ -60,7 +60,10 @@ function CatGallery({
     if (catList.length === 0) {
         return (
             <div className="gallery-empty-state">
-                <h3>[Icon] No Cats Found</h3>
+                <span className="material-symbols-outlined">
+                    Search_Off
+                </span>
+                <h3>No Cats Found</h3>
                 <p className="text-secondary">Try adjusting your filters.</p>
             </div>
         );

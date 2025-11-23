@@ -9,6 +9,16 @@ import './QuickEvoView.css';
 const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
+// Component to hold the Material Icon.
+const MaterialIcon = ({ name, style = {} }) => (
+    <span 
+        className="material-symbols-outlined" 
+        style={{ fontSize: '1.1rem', marginRight: '4px', lineHeight: 1, verticalAlign: 'middle', ...style }}
+    >
+        {name}
+    </span>
+);
+
 const RARITY_MAP = {
   1: 'Special', 2: 'Rare', 3: 'Super Rare', 4: 'Uber Rare', 5: 'Legend'
 };
@@ -268,8 +278,8 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
              <h3 className="quick-evo-title">{currentForm.form_name}</h3>
              <span className="text-secondary" style={{ fontSize: '0.8rem' }}>ID: #{displayId}</span>
           </div>
-          <BaseButton onClick={handleTogglePin} variant={isPinned ? "primary" : "secondary"} style={{ padding: '4px 8px' }}>
-            {isPinned ? '📌' : '📌'}
+          <BaseButton onClick={handleTogglePin} variant="secondary" style={{ padding: '4px 8px' }}>
+            <MaterialIcon name="push_pin" style={{ color: isPinned ? 'var(--color-accent-primary)' : 'var(--color-text-secondary)' }} />
           </BaseButton>
         </div>
         
@@ -314,6 +324,7 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
           )}
           
           <BaseButton onClick={handleSaveProgress} variant="primary" disabled={isSaving} style={{ width: '100%', marginTop: '1rem' }}>
+            <MaterialIcon name="save"/>
             {isSaving ? 'Saving...' : 'Save Changes'}
           </BaseButton>
         </div>

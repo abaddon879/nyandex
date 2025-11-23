@@ -1,6 +1,16 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom'; // Use NavLink for active styling
 
+// Component to hold the Material Icon.
+const MaterialIcon = ({ name }) => (
+    <span 
+        className="material-symbols-outlined" 
+        style={{ fontSize: '1.2rem', marginRight: '10px' }}
+    >
+        {name}
+    </span>
+);
+
 // New CSS file for the sidebar
 import './MainNavigationSidebar.css';
 
@@ -21,21 +31,21 @@ function MainNavigationSidebar() {
           className="nav-link"
           style={({ isActive }) => (isActive ? activeStyle : undefined)}
         >
-          [Icon] Dashboard
+          <MaterialIcon name="dashboard" /> Dashboard
         </NavLink>
         <NavLink 
           to="/catalog" 
           className="nav-link"
           style={({ isActive }) => (isActive ? activeStyle : undefined)}
         >
-          [Icon] Catalog
+          <MaterialIcon name="pets" /> Catalog
         </NavLink>
         <NavLink 
           to="/inventory" 
           className="nav-link"
           style={({ isActive }) => (isActive ? activeStyle : undefined)}
         >
-          [Icon] Inventory
+          <MaterialIcon name="inventory_2" /> Inventory
         </NavLink>
       </nav>
     </aside>

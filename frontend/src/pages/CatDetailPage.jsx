@@ -10,6 +10,16 @@ import './CatDetailPage.css';
 const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
+// Component to hold the Material Icon.
+const MaterialIcon = ({ name, style = {} }) => (
+    <span 
+        className="material-symbols-outlined" 
+        style={{ fontSize: '1.1rem', marginRight: '4px', lineHeight: 1, verticalAlign: 'middle', ...style }}
+    >
+        {name}
+    </span>
+);
+
 function CatDetailPage() {
   const { id } = useParams();
   const catId = parseInt(id);
@@ -291,8 +301,8 @@ function CatDetailPage() {
         <div className="sidebar-card">
             <div className="sidebar-header">
                 <h3>User Progress</h3>
-                <button onClick={handleTogglePin} className="pin-btn">
-                    {isPinned ? '📌 Pinned' : '📌 Track'}
+            <button onClick={handleTogglePin} className="pin-btn">
+              <MaterialIcon name="push_pin" style={{ color: isPinned ? 'var(--color-accent-primary)' : 'var(--color-text-secondary)' }} />
                 </button>
             </div>
             
@@ -333,6 +343,7 @@ function CatDetailPage() {
             </div>
 
             <BaseButton variant="primary" className="save-btn" onClick={handleSave} disabled={isSaving}>
+                <MaterialIcon name="save"/>
                 {isSaving ? 'Saving...' : (isOwned ? 'Save Changes' : 'Add to Collection')}
             </BaseButton>
             

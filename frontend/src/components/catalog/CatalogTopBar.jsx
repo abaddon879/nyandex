@@ -3,6 +3,17 @@ import BaseButton from '../base/BaseButton.jsx';
 import CatalogFilterPanel from './CatalogFilterPanel.jsx'; // Import the new component
 import './CatalogTopBar.css';
 
+// Component to hold the Material Icon.
+// This is a common pattern for using icon fonts in React.
+const MaterialIcon = ({ name }) => (
+    <span 
+        className="material-symbols-outlined" 
+        style={{ fontSize: '1.2rem', marginRight: '6px' }}
+    >
+        {name}
+    </span>
+);
+
 function CatalogTopBar({ 
     mode, 
     setMode, 
@@ -26,6 +37,7 @@ function CatalogTopBar({
     const handleSortDirectionToggle = () => {
         setSort(prevSort => ({ ...prevSort, direction: prevSort.direction === 'ASC' ? 'DESC' : 'ASC' }));
     };
+    const filterIcon = isFilterOpen ? "filter_list_off" : "filter_list";
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -44,7 +56,7 @@ function CatalogTopBar({
                     variant={isFilterOpen ? 'primary' : 'secondary'} 
                     onClick={() => setIsFilterOpen(!isFilterOpen)}
                 >
-                    {isFilterOpen ? 'Hide Filters' : '[Icon] Filters'}
+                    <MaterialIcon name={filterIcon} />
                 </BaseButton>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>

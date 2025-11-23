@@ -11,6 +11,7 @@
 export function filterAndSortCats(masterCatList, userProgress, filters, sort) {
   // Start with the full list
   let list = [...masterCatList];
+  const ownedMap = userProgress.ownedCatMap || new Map();
 
   // --- 1. Filter by Search Query ---
   if (filters.search) {
@@ -33,8 +34,6 @@ export function filterAndSortCats(masterCatList, userProgress, filters, sort) {
 
   // --- 3. Filter by Ownership ---
   if (filters.ownership && filters.ownership !== 'all') {
-    const ownedMap = userProgress.ownedCatMap || new Map();
-    
     list = list.filter(cat => {
       const isOwned = ownedMap.has(cat.cat_id);
       if (filters.ownership === 'owned') {
@@ -47,16 +46,33 @@ export function filterAndSortCats(masterCatList, userProgress, filters, sort) {
     });
   }
 
-  // --- 4. Filter by Status (Ready to Evolve) ---
-  if (filters.status && filters.status.readyToEvolve) {
-    const readyCatIds = userProgress.readyCatIds || new Set();
-    list = list.filter(cat => readyCatIds.has(cat.cat_id));
+  // --- 4. Filter by Status ---
+  if (filters.status) {
+      // A. Ready to Evolve (Calculated by Backend)
+      if (filters.status.readyToEvolve) {
+        const readyCatIds = userProgress.readyCatIds || new Set();
+        list = list.filter(cat => readyCatIds.has(cat.cat_id));
+      }
+
+      // B. [NEW] Has Next Evolution (Has form > current form)
+      if (filters.status.hasEvolution) {
+        list = list.filter(cat => {
+            const userCat = ownedMap.get(cat.cat_id);
+            // Must be owned to have an evolution status
+            if (!userCat) return false;
+
+            // Current form ID (default to 1 if data missing)
+            const currentFormId = userCat.form_id || 1;
+            
+            // Check if any form in the master list exists with ID > current
+            return cat.forms.some(f => f.form_id > currentFormId);
+        });
+      }
   }
 
   // --- 5. Sorting ---
   if (sort.field) {
     const direction = sort.direction === 'DESC' ? -1 : 1;
-    const ownedMap = userProgress.ownedCatMap || new Map();
 
     list.sort((a, b) => {
       let valA, valB;

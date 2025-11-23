@@ -10,7 +10,7 @@ import QuickEvoView from '../components/catalog/QuickEvoView.jsx';
 import BulkActionFooter from '../components/catalog/BulkActionFooter.jsx';
 import './CatalogPage.css';
 
-const PAGE_SIZE = 50; // Moved constant here
+const PAGE_SIZE = 50; 
 
 function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,7 +25,7 @@ function CatalogPage() {
   const [readyToEvolveIds, setReadyToEvolveIds] = useState(new Set());
 
   // UI State
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE); // [NEW] Lifted State
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedCatId, setSelectedCatId] = useState(null);
   const [selectedBulkIds, setSelectedBulkIds] = useState([]);
   
@@ -35,13 +35,17 @@ function CatalogPage() {
       search: '', 
       rarity: [], 
       ownership: 'all', 
-      status: { readyToEvolve: filterParam === 'ready' } 
+      // [UPDATED] Initialize new filter state
+      status: { 
+          readyToEvolve: filterParam === 'ready',
+          hasEvolution: false 
+      } 
     };
   });
 
   const [sort, setSort] = useState({ field: 'cat_order_id', direction: 'ASC' });
 
-  // [NEW] Reset visible count ONLY when filters/sort change
+  // Reset visible count when filters/sort change
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [filters, sort]);
@@ -59,7 +63,6 @@ function CatalogPage() {
 
   const fetchPageData = useCallback(async () => {
     if (!userId) return;
-    // Only show full loading spinner on initial empty load
     if (masterCatList.length === 0) setIsLoading(true);
     
     setError(null);
@@ -110,7 +113,6 @@ function CatalogPage() {
     setSelectedBulkIds([]);
   };
 
-  // [NEW] Handler passed to Gallery
   const handleLoadMore = () => {
     setVisibleCount(prev => prev + PAGE_SIZE);
   };
@@ -139,14 +141,13 @@ function CatalogPage() {
             selectedBulkIds={selectedBulkIds}
             onBulkSelect={setSelectedBulkIds}
             
-            // [NEW] Props for controlled pagination
             visibleCount={visibleCount}
             onLoadMore={handleLoadMore}
           />
         </div>
         <aside className="catalog-sidebar-wrapper">
           <QuickEvoView
-            key={selectedCatId} // Keeps sidebar fresh when selection changes
+            key={selectedCatId} 
             catId={selectedCatId}
             userMap={userCatMap}
             onDataChange={fetchPageData} 

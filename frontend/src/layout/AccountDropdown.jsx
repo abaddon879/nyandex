@@ -38,6 +38,16 @@ function AccountDropdown() {
     cursor: 'pointer'
   };
 
+  // Component to hold the Material Icon.
+  const MaterialIcon = ({ name, style = {} }) => (
+      <span 
+          className="material-symbols-outlined" 
+          style={{ fontSize: '1.5rem', ...style }}
+      >
+          {name}
+      </span>
+  );
+
   let dropdownContent;
   if (isAuthenticated && !isAnonymous) {
     // --- Registered User View (Spec 3.4) ---
@@ -74,7 +84,7 @@ function AccountDropdown() {
         onClick={() => setIsOpen(!isOpen)} 
         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}
       >
-        [👤 Account]
+        <MaterialIcon name="account_circle" />
       </button>
 
       {/* 2. The Dropdown Menu (conditional) */}
