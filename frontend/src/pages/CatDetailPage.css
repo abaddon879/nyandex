@@ -169,6 +169,13 @@
   object-fit: contain;
 }
 
+.req-badge.stage { 
+  background: #f1f5f9; 
+  color: #475569; 
+  border-color: #cbd5e1;
+  font-weight: 600;
+}
+
 /* Notes */
 .notes-area {
   width: 100%;

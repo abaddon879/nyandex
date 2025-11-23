@@ -9,6 +9,19 @@ import './QuickEvoView.css';
 const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
+const RARITY_MAP = {
+  1: 'Special', 2: 'Rare', 3: 'Super Rare', 4: 'Uber Rare', 5: 'Legend'
+};
+
+const CATSEYE_FALLBACK_IMAGES = {
+    'Special': 'gatyaitemD_50_f.png',
+    'Rare': 'gatyaitemD_51_f.png',
+    'Super Rare': 'gatyaitemD_52_f.png',
+    'Uber Rare': 'gatyaitemD_53_f.png',
+    'Legend': 'gatyaitemD_54_f.png',
+    'Dark': 'gatyaitemD_58_f.png'
+};
+
 const StatCalculator = {
   getFinalStats: (stats, level, plus) => {
     if (!stats) return { health: 1, attack_power: 1, dps: 1 };
@@ -28,6 +41,8 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
 
   const [staticData, setStaticData] = useState(null);
   const [inventoryMap, setInventoryMap] = useState(new Map());
+  const [inventoryList, setInventoryList] = useState([]); 
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -53,10 +68,13 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
       ]);
       
       const invMap = new Map();
-      inventory.forEach(item => invMap.set(item.item_id, item.item_quantity));
+      inventory.forEach(item => {
+          invMap.set(item.item_id, item.item_quantity);
+      });
       
-      setStaticData(catDetails);
       setInventoryMap(invMap);
+      setInventoryList(inventory);
+      setStaticData(catDetails);
 
       const defaultFormId = (catDetails.forms && catDetails.forms.length > 0) 
         ? catDetails.forms[0].form_id 
@@ -87,9 +105,29 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     fetchData();
   }, [fetchData]);
 
+  // [FIXED] Robust Finder: Uses Item Type instead of Name matching
+  const findCatseyeData = (keyword) => {
+      // 1. Backend Priority
+      if (staticData && staticData.catseyes) {
+          if (keyword === 'Dark' && staticData.catseyes.dark) return staticData.catseyes.dark;
+          if (keyword !== 'Dark' && staticData.catseyes.standard && staticData.catseyes.standard.item_name.includes(keyword)) {
+              return staticData.catseyes.standard;
+          }
+      }
+      
+      // 2. Frontend Fallback (Filter by Type first, then Name)
+      if (!inventoryList) return null;
+      
+      // We filter for type 'Catseye' first, so we don't accidentally match a cat unit name
+      const found = inventoryList.find(i => 
+          i.item_type === 'Catseye' && i.item_name.includes(keyword)
+      );
+      return found || null;
+  };
+
   const handleFormClick = (form) => {
     setFormId(form.form_id);
-    if (form.evolution && form.evolution.required_level) {
+    if (form.evolution && form.evolution.required_level && form.evolution.required_level > 0) {
       const minLvl = form.evolution.required_level;
       if ((level + plusLevel) < minLvl) {
         setLevel(minLvl - plusLevel > 0 ? minLvl - plusLevel : 1);
@@ -132,17 +170,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
   
   const currentForm = useMemo(() => {
     if (!staticData) return null;
-    
-    if (!staticData.forms || staticData.forms.length === 0) {
-        return {
-            form_id: 1,
-            form_name: "Basic Form (No Data)",
-            generic_form_name: "Normal",
-            image_url: "", 
-            stats: null
-        };
-    }
-
     const found = staticData.forms.find(f => f.form_id == formId);
     return found || staticData.forms[0];
   }, [staticData, formId]);
@@ -155,25 +182,93 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
   }, [staticData, currentForm]);
 
 
-  if (catId === null || catId === undefined) {
-    return (
-      <div className="quick-evo-view" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--color-border)' }}>🐈</div>
-        <p className="text-secondary">Select a cat to view its evolution and progress.</p>
-      </div>
-    );
-  }
+  const getMissingLevelRequirements = () => {
+      if (!nextForm || !nextForm.evolution) return [];
+      
+      const reqLvl = nextForm.evolution.required_level;
+      if (reqLvl === -1) return [{ type: 'stage', label: 'Stage Unlock' }];
+      if (!reqLvl) return [];
 
+      const currentTotal = level + plusLevel;
+      if (currentTotal >= reqLvl) return [{ type: 'met', label: `Level ${reqLvl}` }];
+
+      const rarityName = RARITY_MAP[staticData.rarity_id];
+      const levelsToGain = reqLvl - currentTotal;
+      const currentBase = level;
+      const targetBase = currentBase + levelsToGain;
+
+      const reqs = [{ type: 'level', label: `Level ${reqLvl}`, missing: levelsToGain }];
+
+      if (targetBase <= 30 || !rarityName) {
+          return reqs;
+      }
+
+      // 1. Standard Eyes
+      let stdEyes = 0;
+      const stdStart = Math.max(30, currentBase);
+      const stdEnd = Math.min(50, targetBase);
+
+      if (stdStart < 50) {
+           if (stdStart < 45) stdEyes += (Math.min(45, stdEnd) - stdStart) * 1;
+           if (stdEnd > 45)   stdEyes += (stdEnd - Math.max(45, stdStart)) * 2;
+      }
+
+      if (stdEyes > 0) {
+          const itemData = findCatseyeData(rarityName);
+          // Use item data if found, otherwise fallback config
+          const name = itemData ? itemData.item_name : `${rarityName} Catseye`;
+          const image = itemData ? itemData.image_url : CATSEYE_FALLBACK_IMAGES[rarityName];
+          const owned = itemData ? (inventoryMap.get(itemData.item_id) || 0) : 0;
+          
+          reqs.push({ 
+              type: 'item', 
+              name: name, 
+              needed: stdEyes, 
+              owned: owned,
+              image: image 
+          });
+      }
+
+      // 2. Dark Eyes
+      let darkEyes = 0;
+      if (targetBase > 50) {
+          const darkStart = Math.max(50, currentBase);
+          const darkEnd = Math.min(60, targetBase);
+
+          if (darkStart < 55) darkEyes += (Math.min(55, darkEnd) - darkStart) * 1;
+          if (darkEnd > 55)   darkEyes += (darkEnd - Math.max(55, darkStart)) * 2;
+      }
+
+      if (darkEyes > 0) {
+          const itemData = findCatseyeData('Dark');
+          const name = itemData ? itemData.item_name : 'Dark Catseye';
+          const image = itemData ? itemData.image_url : CATSEYE_FALLBACK_IMAGES['Dark'];
+          const owned = itemData ? (inventoryMap.get(itemData.item_id) || 0) : 0;
+
+          reqs.push({ 
+              type: 'item', 
+              name: name, 
+              needed: darkEyes, 
+              owned: owned,
+              image: image 
+          });
+      }
+
+      return reqs;
+  };
+
+  // ... (Render Code unchanged) ...
+
+  if (catId === null || catId === undefined) return <div className="quick-evo-view" style={{textAlign:'center', paddingTop:'4rem'}}><p className="text-secondary">Select a cat...</p></div>;
   if (isLoading) return <div className="quick-evo-view">Loading...</div>;
-  if (error) return <div className="quick-evo-view" style={{ color: 'red' }}>{error}</div>;
+  if (error) return <div className="quick-evo-view" style={{color:'red'}}>{error}</div>;
   if (!staticData || !currentForm) return <div className="quick-evo-view">Data missing.</div>;
 
-  const displayId = (staticData.cat_order_id !== undefined && staticData.cat_order_id !== null) 
-    ? staticData.cat_order_id 
-    : staticData.cat_id;
-
+  const displayId = (staticData.cat_order_id !== undefined && staticData.cat_order_id !== null) ? staticData.cat_order_id : staticData.cat_id;
   const maxLevel = staticData.max_level || 50;
   const maxPlus = staticData.max_plus_level || 0;
+  
+  const levelReqs = getMissingLevelRequirements();
 
   return (
     <aside className="quick-evo-view">
@@ -181,12 +276,10 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
         <div className="quick-evo-header">
           <div>
              <h3 className="quick-evo-title">{currentForm.form_name}</h3>
-             <span className="text-secondary" style={{ fontSize: '0.8rem' }}>
-                ID: #{displayId}
-             </span>
+             <span className="text-secondary" style={{ fontSize: '0.8rem' }}>ID: #{displayId}</span>
           </div>
-          <BaseButton onClick={handleTogglePin} variant={isPinned ? "primary" : "secondary"} title="Track on Dashboard" style={{ padding: '4px 8px' }}>
-            {isPinned ? '📌 Pinned' : '📌 Track'}
+          <BaseButton onClick={handleTogglePin} variant={isPinned ? "primary" : "secondary"} style={{ padding: '4px 8px' }}>
+            {isPinned ? '📌' : '📌'}
           </BaseButton>
         </div>
         
@@ -214,7 +307,7 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
             </div>
           </div>
           
-          {staticData.forms && staticData.forms.length > 0 ? (
+          {staticData.forms && (
             <div className="form-icon-group">
                 {staticData.forms.map((form, index) => (
                 <React.Fragment key={form.form_id}>
@@ -227,10 +320,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                     </div>
                 </React.Fragment>
                 ))}
-            </div>
-          ) : (
-            <div className="text-secondary" style={{ padding: '1rem', textAlign: 'center', fontSize: '0.85rem' }}>
-                [No evolution data available]
             </div>
           )}
           
@@ -246,29 +335,67 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                 <h3 className="quick-evo-title" style={{fontSize: '1rem'}}>Next: {nextForm.form_name}</h3>
             </div>
             <div className="quick-evo-body requirements-list">
-                <div className={`requirement-item ${(level+plusLevel) >= nextForm.evolution.required_level ? 'is-complete' : 'is-missing'}`}>
-                    <span style={{ width: '24px', textAlign: 'center' }}>Lvl</span> 
-                    <span>Level {nextForm.evolution.required_level}</span>
-                    {(level+plusLevel) >= nextForm.evolution.required_level && ' ✓'}
-                </div>
-                {nextForm.evolution.requirements.map(req => {
+                
+                {levelReqs.map((req, idx) => {
+                    if (req.type === 'item') {
+                        const isComplete = req.owned >= req.needed;
+                        const pct = req.needed > 0 ? Math.min(100, (req.owned / req.needed) * 100) : 100;
+                        
+                        return (
+                            <div key={`eye-${idx}`} style={{ marginTop: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                    <div style={{display:'flex', alignItems:'center', gap:'4px'}}>
+                                        {req.image ? (
+                                            <img src={`${BASE_URL}/items/${req.image}`} alt={req.name} style={{width:'16px', height:'16px', objectFit:'contain'}} />
+                                        ) : (
+                                            <span style={{fontSize:'1rem'}}>🔮</span>
+                                        )}
+                                        <span>{req.name}</span>
+                                    </div>
+                                    <span className={isComplete ? 'text-success' : 'text-destructive'} style={{fontWeight: isComplete ? '400' : '700'}}>
+                                        {req.owned} / {req.needed}
+                                    </span>
+                                </div>
+                                <div className="progress-track" style={{ height: '6px', marginTop: '2px' }}>
+                                    <div className="progress-fill" style={{ width: `${pct}%`, backgroundColor: isComplete ? 'var(--color-accent-success)' : 'var(--color-accent-destructive)' }}></div>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div key={`lvl-${idx}`} className={`requirement-item ${req.type === 'met' ? 'is-complete' : (req.type === 'stage' ? 'is-stage' : 'is-missing')}`}>
+                            {req.type === 'level' && (
+                                <>
+                                    {/* [FIX] Removed "Lvl" badge */}
+                                    <span style={{ fontWeight: '700' }}>{req.label}</span>
+                                    {req.isComplete ? ' ✓' : <span style={{marginLeft:'auto', fontSize:'0.8rem'}}>+{req.missing}</span>}
+                                </>
+                            )}
+                            {req.type === 'stage' && (
+                                <span style={{ fontWeight: '600' }}>{req.label}</span>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {nextForm.evolution && nextForm.evolution.requirements.map(req => {
                   const userQty = inventoryMap.get(req.item_id) || 0;
                   const isComplete = userQty >= req.item_qty;
                   const percent = Math.min(100, (userQty / req.item_qty) * 100);
                   return (
                     <div key={req.item_id} style={{ marginTop: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                        {/* [UPDATED] Show image and name */}
                         <div style={{display:'flex', alignItems:'center', gap:'4px'}}>
                             <img src={`${BASE_URL}/items/${req.image_url}`} alt={req.item_name} style={{width:'16px', height:'16px', objectFit:'contain'}} />
                             <span>{req.item_name}</span>
                         </div>
-                        <span className={isComplete ? 'text-success' : 'text-secondary'}>
+                        <span className={isComplete ? 'text-success' : 'text-destructive'} style={{fontWeight: isComplete ? '400' : '700'}}>
                             {userQty} / {req.item_qty}
                         </span>
                       </div>
                       <div className="progress-track" style={{ height: '6px', marginTop: '2px' }}>
-                          <div className="progress-fill" style={{ width: `${percent}%`, backgroundColor: isComplete ? 'var(--color-accent-success)' : 'var(--color-accent-info)' }}></div>
+                          <div className="progress-fill" style={{ width: `${percent}%`, backgroundColor: isComplete ? 'var(--color-accent-success)' : 'var(--color-accent-destructive)' }}></div>
                       </div>
                     </div>
                   );

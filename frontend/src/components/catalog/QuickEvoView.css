@@ -115,3 +115,8 @@
   color: var(--color-accent-destructive);
   font-weight: 600;
 }
+.requirement-item.is-stage {
+  color: #64748b;
+  font-weight: 600;
+  font-style: normal;
+}

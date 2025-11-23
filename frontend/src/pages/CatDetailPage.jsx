@@ -220,7 +220,11 @@ function CatDetailPage() {
             <h2>Evolution</h2>
             <div className="evolution-list">
                 {staticData.forms.map((form) => {
-                    const hasReqs = form.evolution && (form.evolution.required_level || form.evolution.requirements.length > 0);
+                    const hasReqs = form.evolution && (form.evolution.required_level !== null || form.evolution.requirements.length > 0);
+                    
+                    // [NEW] Determine Badge Type (Stage vs Level)
+                    const isStageUnlock = form.evolution?.required_level === -1;
+                    
                     return (
                         <div key={form.form_id} className={`evolution-row ${form.form_id == formId ? 'active-form' : ''}`}>
                             <div 
@@ -235,12 +239,21 @@ function CatDetailPage() {
                                 <div className="evolution-requirements">
                                     <div className="req-arrow">➔</div>
                                     <div className="req-details">
-                                        {form.evolution.required_level && (
-                                            <div className={`req-badge ${level + plusLevel >= form.evolution.required_level ? 'met' : 'unmet'}`}>
-                                                Lvl {form.evolution.required_level}
+                                        
+                                        {/* [UPDATED] Stage Unlock Logic */}
+                                        {isStageUnlock ? (
+                                            <div className="req-badge stage" title="Obtained by clearing a specific stage">
+                                                Stage Unlock
                                             </div>
+                                        ) : (
+                                            form.evolution.required_level && (
+                                                <div className={`req-badge ${level + plusLevel >= form.evolution.required_level ? 'met' : 'unmet'}`}>
+                                                    Lvl {form.evolution.required_level}
+                                                </div>
+                                            )
                                         )}
-                                        {/* [UPDATED] Now renders images instead of just IDs */}
+
+                                        {/* Requirements */}
                                         {form.evolution.requirements.map(req => {
                                             const owned = inventoryMap.get(req.item_id) || 0;
                                             return (
@@ -272,6 +285,7 @@ function CatDetailPage() {
       </div>
 
       <aside className="detail-sidebar">
+        {/* ... Sidebar content unchanged ... */}
         <div className="sidebar-card">
             <div className="sidebar-header">
                 <h3>User Progress</h3>
