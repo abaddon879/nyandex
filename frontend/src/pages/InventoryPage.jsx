@@ -150,7 +150,7 @@ function InventoryPage() {
   return (
     <div className="inventory-container">
       
-      {/* 1. CURRENCIES */}
+      {/* 1. CURRENCIES & TICKETS */}
       {groups.currencies.length > 0 && (
         <section className="inventory-section">
             <div className="section-header">Currencies & Tickets</div>
@@ -206,13 +206,12 @@ function InventoryPage() {
           )}
       </section>
 
-      {/* 5. OTHER ITEMS (Converted to 3-Column Grid) */}
+      {/* 5. OTHER ITEMS */}
       {groups.other.length > 0 && (
         <section className="inventory-section">
             <div className="section-header">Other Items</div>
             <div className="three-column-grid">
                 {groups.other.map(item => (
-                    // [NEW] Use SimpleListRow but with card styling
                     <SimpleListRow 
                         key={item.item_id} 
                         item={item} 
@@ -307,13 +306,20 @@ function SimpleListGroup({ title, items, userId }) {
         <div className="list-panel">
             <div className="sub-section-header-row">{title}</div>
             {items.map(item => (
-                <SimpleListRow key={item.item_id} item={item} userId={userId} />
+                <div key={item.item_id} className={`list-row simple ${item.owned === 0 ? 'is-zero' : ''}`}>
+                    <div className="list-col-info">
+                        <img src={`${BASE_URL}/items/${item.image_url}`} className="list-icon" alt="" loading="lazy"/>
+                        <span className="list-name">{item.item_name}</span>
+                    </div>
+                    <div className="list-col-qty">
+                        <QuantityInput userId={userId} itemId={item.item_id} initialQuantity={item.owned} />
+                    </div>
+                </div>
             ))}
         </div>
     );
 }
 
-// [NEW] Component for Simple Rows (like Building Materials / Other)
 function SimpleListRow({ item, userId, asCard = false }) {
     const rowClasses = [
         'list-row',
@@ -335,19 +341,32 @@ function SimpleListRow({ item, userId, asCard = false }) {
     );
 }
 
+// [UPDATED] Uniform Width for All Currencies
 function CurrencyCard({ item, userId }) {
+  // Check if this is Catfood
+    const isCatfood = item.item_name === 'Catfood';
+    
+    // Calculate Draws (1500 per 11-draw)
+    const draws = isCatfood ? Math.floor(item.owned / 1500) : 0;
     return (
         <div className="currency-card">
             <div className="currency-header">
                 <img src={`${BASE_URL}/items/${item.image_url}`} style={{width:24, height:24}} alt="" />
-                <span className="currency-name">{item.item_name}</span>
+          <span className="currency-name">{item.item_name}</span>
+          {/* [NEW] Show Draw Count if Catfood and sufficient funds */}
+                    {isCatfood && draws >= 1 && (
+                        <span className="currency-draw-badge">
+                            {draws}x 11-Draw{draws > 1 ? 's' : ''}
+                        </span>
+                    )}
             </div>
-            <div style={{marginLeft: 'auto'}}>
+            {/* Fixed width container for uniformity */}
+            <div style={{marginLeft: 'auto', width: '140px'}}>
                 <QuantityInput 
                     userId={userId}
                     itemId={item.item_id}
                     initialQuantity={item.owned}
-                    wide={false}
+                    wide={true} // Always fill the 140px container
                 />
             </div>
         </div>

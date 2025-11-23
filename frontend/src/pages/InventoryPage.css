@@ -318,3 +318,19 @@
   .quantity-btn { width: 36px; font-size: 1.1rem; }
   .quantity-field { font-size: 1rem; }
 }
+
+/* Add this to the bottom of your CSS file */
+
+.currency-draw-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #d97706; /* Darker Gold/Orange */
+  background-color: #fffbeb; /* Light Yellow bg */
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+  display: inline-block;
+  border: 1px solid #fcd34d;
+  line-height: 1.2;
+  white-space: nowrap;
+}
