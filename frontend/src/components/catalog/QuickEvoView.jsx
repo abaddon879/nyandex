@@ -37,7 +37,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
   const [formId, setFormId] = useState(null);
   const [isPinned, setIsPinned] = useState(false);
 
-  // --- 1. Data Fetching ---
   const fetchData = useCallback(async () => {
     if (catId === null || catId === undefined || !userId) {
       setStaticData(null);
@@ -59,7 +58,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
       setStaticData(catDetails);
       setInventoryMap(invMap);
 
-      // Default to 1st form if available, else 1
       const defaultFormId = (catDetails.forms && catDetails.forms.length > 0) 
         ? catDetails.forms[0].form_id 
         : 1;
@@ -88,8 +86,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // --- 2. Handlers ---
 
   const handleFormClick = (form) => {
     setFormId(form.form_id);
@@ -134,8 +130,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     }
   };
   
-  // --- 3. Computed Values ---
-
   const currentForm = useMemo(() => {
     if (!staticData) return null;
     
@@ -160,17 +154,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     return staticData.forms[currentIndex + 1] || null;
   }, [staticData, currentForm]);
 
-  const calculatedStats = useMemo(() => {
-    if (!currentForm || !currentForm.stats) return null;
-    return StatCalculator.getFinalStats(
-      currentForm.stats, 
-      level, 
-      plusLevel
-    );
-  }, [currentForm, level, plusLevel]);
-
-
-  // --- 4. Render ---
 
   if (catId === null || catId === undefined) {
     return (
@@ -275,7 +258,11 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                   return (
                     <div key={req.item_id} style={{ marginTop: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                        <span>Item #{req.item_id}</span>
+                        {/* [UPDATED] Show image and name */}
+                        <div style={{display:'flex', alignItems:'center', gap:'4px'}}>
+                            <img src={`${BASE_URL}/items/${req.image_url}`} alt={req.item_name} style={{width:'16px', height:'16px', objectFit:'contain'}} />
+                            <span>{req.item_name}</span>
+                        </div>
                         <span className={isComplete ? 'text-success' : 'text-secondary'}>
                             {userQty} / {req.item_qty}
                         </span>

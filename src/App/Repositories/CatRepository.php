@@ -14,13 +14,11 @@ class CatRepository
 
     /**
      * Implements API Spec 3.1: Fetch Base Cat List Data
-     * Fetches minimal static info for all cats for the Catalog display.
      */
     public function getBaseCatList(): array
     {
         $pdo = $this->database->getConnection();
 
-        // 1. Fetch all base cats
         $sqlCats = "SELECT cat_id, cat_order_id, rarity_id
                     FROM cat
                     ORDER BY cat_order_id ASC";
@@ -28,14 +26,12 @@ class CatRepository
         $stmtCats = $pdo->query($sqlCats);
         $cats = $stmtCats->fetchAll(PDO::FETCH_ASSOC);
 
-        // 2. Fetch all forms
         $sqlForms = "SELECT cat_id, form_id, form_name, image_url
                      FROM cat_form";
         
         $stmtForms = $pdo->query($sqlForms);
         $forms = $stmtForms->fetchAll(PDO::FETCH_ASSOC);
 
-        // 3. Create a lookup map for forms
         $formsByCatId = [];
         foreach ($forms as $form) {
             $formsByCatId[$form['cat_id']][] = [
@@ -45,11 +41,9 @@ class CatRepository
             ];
         }
 
-        // 4. Combine the data
         $result = [];
         foreach ($cats as $cat) {
             $catId = $cat['cat_id'];
-            
             $result[] = [
                 'cat_id' => (int)$cat['cat_id'],
                 'cat_order_id' => (int)$cat['cat_order_id'],
@@ -61,10 +55,6 @@ class CatRepository
         return $result;
     }
 
-    /**
-     * [NEW METHOD]
-     * A simple helper for middleware to find a base cat by its ID.
-     */
     public function getById(int $cat_id): array|false
     {
         $pdo = $this->database->getConnection();
@@ -75,7 +65,6 @@ class CatRepository
 
     /**
      * Implements API Spec 3.3: Fetch Detailed Static Cat Data
-     * Fetches all static details for a single cat.
      */
     public function getCatDetails(int $cat_id): array|false
     {
@@ -92,13 +81,13 @@ class CatRepository
         // 2. Get all Forms and their Stats
         $sqlForms = "SELECT 
                         f.form_id, f.form_name, f.description, f.required_level, f.required_xp, f.image_url,
-                        t.form_name as generic_form_name, -- This is the new field
+                        t.form_name as generic_form_name,
                         s.health, s.knockbacks, s.move_speed, s.attack_power, s.attack_range,
                         s.attack_frequency_f, s.attack_foreswing_f, s.attack_backswing_f,
                         s.recharge_time_f, s.cost, s.attack_type, s.hit_count
                      FROM cat_form f
                      JOIN cat_form_stat s ON f.cat_id = s.cat_id AND f.form_id = s.form_id
-                     JOIN form t ON f.form_id = t.form_id -- The new JOIN
+                     JOIN form t ON f.form_id = t.form_id
                      WHERE f.cat_id = :id
                      ORDER BY f.form_id ASC";
         
@@ -106,7 +95,7 @@ class CatRepository
         $stmt->execute(['id' => $cat_id]);
         $formsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // 3. Get all Traits (Many-to-Many)
+        // 3. Get all Traits
         $sqlTraits = "SELECT form_id, trait_id FROM cat_form_trait WHERE cat_id = :id";
         $stmt = $pdo->prepare($sqlTraits);
         $stmt->execute(['id' => $cat_id]);
@@ -117,8 +106,18 @@ class CatRepository
             $traitsByFormId[$trait['form_id']][] = (int)$trait['trait_id'];
         }
 
-        // 4. Get all Evolution Requirements (Many-to-Many)
-        $sqlReqs = "SELECT form_id, item_id, item_qty FROM cat_form_requirement WHERE cat_id = :id";
+        // 4. Get all Evolution Requirements (Joined with Item table)
+        // [UPDATED] Added item_name and image_url to the query
+        $sqlReqs = "SELECT 
+                        r.form_id, 
+                        r.item_id, 
+                        r.item_qty,
+                        i.item_name,
+                        i.image_url
+                    FROM cat_form_requirement r
+                    JOIN item i ON r.item_id = i.item_id
+                    WHERE r.cat_id = :id";
+        
         $stmt = $pdo->prepare($sqlReqs);
         $stmt->execute(['id' => $cat_id]);
         $reqsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -127,7 +126,9 @@ class CatRepository
         foreach ($reqsData as $req) {
             $reqsByFormId[$req['form_id']][] = [
                 'item_id' => (int)$req['item_id'],
-                'item_qty' => (int)$req['item_qty']
+                'item_qty' => (int)$req['item_qty'],
+                'item_name' => $req['item_name'], // [NEW]
+                'image_url' => $req['image_url']  // [NEW]
             ];
         }
 
@@ -138,7 +139,7 @@ class CatRepository
             $formsResult[] = [
                 'form_id' => (int)$formId,
                 'form_name' => $form['form_name'],
-                'generic_form_name' => $form['generic_form_name'], // <-- Add the new field
+                'generic_form_name' => $form['generic_form_name'],
                 'description' => $form['description'],
                 'image_url' => $form['image_url'],
                 'evolution' => [
@@ -164,7 +165,6 @@ class CatRepository
             ];
         }
 
-        // Return the final combined object
         return [
             'cat_id' => (int)$cat['cat_id'],
             'rarity_id' => (int)$cat['rarity_id'],

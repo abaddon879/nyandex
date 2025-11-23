@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link, useBlocker } from 'react-router-dom';
+import { useParams, useBlocker } from 'react-router-dom';
 import { catService } from '../api/catService';
 import { userTrackerService } from '../api/userTrackerService';
 import { authStore } from '../stores/authStore';
@@ -11,11 +11,10 @@ const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
 function CatDetailPage() {
-  const { id } = useParams(); // Get cat ID from URL
+  const { id } = useParams();
   const catId = parseInt(id);
   const { userId } = authStore.getState();
 
-  // --- State ---
   const [staticData, setStaticData] = useState(null);
   const [inventoryMap, setInventoryMap] = useState(new Map());
   
@@ -30,10 +29,8 @@ function CatDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  // [NEW] Track original state for dirty checking
   const [originalState, setOriginalState] = useState(null);
 
-  // --- Data Fetching ---
   const fetchData = useCallback(async () => {
     if (!userId || isNaN(catId)) return;
     setIsLoading(true);
@@ -45,15 +42,12 @@ function CatDetailPage() {
         userTrackerService.getSingleCatProgress(userId, catId)
       ]);
 
-      // 1. Setup Inventory Map
       const invMap = new Map();
       inventory.forEach(item => invMap.set(item.item_id, item.item_quantity));
       setInventoryMap(invMap);
 
-      // 2. Setup Static Data
       setStaticData(catDetails);
 
-      // 3. Setup User State
       const defaultFormId = catDetails.forms[0]?.form_id || 1;
       
       let nextLevel = 1;
@@ -70,7 +64,6 @@ function CatDetailPage() {
         nextOwned = true;
       } 
       
-      // Apply state
       setLevel(nextLevel);
       setPlusLevel(nextPlus);
       setFormId(nextForm);
@@ -78,7 +71,6 @@ function CatDetailPage() {
       setIsOwned(nextOwned);
       setIsPinned(!!userProgress.is_pinned);
 
-      // [NEW] Save this as the "clean" state
       setOriginalState({
         level: nextLevel,
         plusLevel: nextPlus,
@@ -98,8 +90,6 @@ function CatDetailPage() {
     fetchData();
   }, [fetchData]);
 
-
-  // --- [NEW] Dirty Check & Blocker ---
   const isDirty = useMemo(() => {
     if (!originalState) return false;
     return (
@@ -125,9 +115,6 @@ function CatDetailPage() {
       }
     }
   }, [blocker]);
-
-
-  // --- Handlers ---
 
   const handleSave = async () => {
     if (!userId) return;
@@ -170,8 +157,6 @@ function CatDetailPage() {
     }
   };
 
-  // --- Computed Data ---
-
   const currentForm = useMemo(() => {
     if (!staticData) return null;
     return staticData.forms.find(f => f.form_id == formId) || staticData.forms[0];
@@ -183,23 +168,18 @@ function CatDetailPage() {
   }, [currentForm, level, plusLevel]);
 
 
-  // --- Render ---
-
   if (isLoading) return <div className="page-loading" style={{padding:'2rem'}}>Loading Cat Details...</div>;
   if (error) return <div className="page-error" style={{padding:'2rem', color:'red'}}>{error}</div>;
   if (!staticData) return <div className="page-error" style={{padding:'2rem'}}>Cat not found.</div>;
 
-  // [NEW] Dynamic Limits
   const maxLevel = staticData.max_level || 50;
   const maxPlus = staticData.max_plus_level || 0;
 
   return (
     <div className="cat-detail-page">
       
-      {/* Left Column: Hero & Stats */}
       <div className="detail-content">
         
-        {/* Hero Header */}
         <section className="detail-hero">
           <div className="hero-image-container">
             {currentForm.image_url ? (
@@ -220,7 +200,6 @@ function CatDetailPage() {
           </div>
         </section>
 
-        {/* Stats Table */}
         {stats && (
         <section className="detail-section">
           <h2>Combat Stats (Lvl {level} + {plusLevel})</h2>
@@ -237,11 +216,10 @@ function CatDetailPage() {
         </section>
         )}
 
-        {/* Evolution Tree / Requirements */}
         <section className="detail-section">
             <h2>Evolution</h2>
             <div className="evolution-list">
-                {staticData.forms.map((form, idx) => {
+                {staticData.forms.map((form) => {
                     const hasReqs = form.evolution && (form.evolution.required_level || form.evolution.requirements.length > 0);
                     return (
                         <div key={form.form_id} className={`evolution-row ${form.form_id == formId ? 'active-form' : ''}`}>
@@ -262,11 +240,13 @@ function CatDetailPage() {
                                                 Lvl {form.evolution.required_level}
                                             </div>
                                         )}
+                                        {/* [UPDATED] Now renders images instead of just IDs */}
                                         {form.evolution.requirements.map(req => {
                                             const owned = inventoryMap.get(req.item_id) || 0;
                                             return (
-                                                <div key={req.item_id} className={`req-badge ${owned >= req.item_qty ? 'met' : 'unmet'}`}>
-                                                    Item {req.item_id}: {owned}/{req.item_qty}
+                                                <div key={req.item_id} className={`req-badge ${owned >= req.item_qty ? 'met' : 'unmet'}`} title={req.item_name}>
+                                                    <img src={`${BASE_URL}/items/${req.image_url}`} alt={req.item_name} className="req-icon" />
+                                                    <span>{owned}/{req.item_qty}</span>
                                                 </div>
                                             )
                                         })}
@@ -291,7 +271,6 @@ function CatDetailPage() {
 
       </div>
 
-      {/* Right Column: Sticky Controls */}
       <aside className="detail-sidebar">
         <div className="sidebar-card">
             <div className="sidebar-header">
@@ -307,7 +286,6 @@ function CatDetailPage() {
                     <input 
                         type="number" className="form-input" value={level} min="1" max={maxLevel}
                         onChange={(e) => {
-                           // [NEW] Clamping logic
                            const val = parseInt(e.target.value) || 1;
                            setLevel(Math.min(maxLevel, Math.max(1, val)));
                         }}
@@ -316,7 +294,6 @@ function CatDetailPage() {
                     <input 
                         type="number" className="form-input" value={plusLevel} min="0" max={maxPlus}
                         onChange={(e) => {
-                           // [NEW] Clamping logic
                            const val = parseInt(e.target.value) || 0;
                            setPlusLevel(Math.min(maxPlus, Math.max(0, val)));
                         }}

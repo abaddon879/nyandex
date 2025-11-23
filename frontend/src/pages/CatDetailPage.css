@@ -8,10 +8,9 @@
   align-items: flex-start;
 }
 
-/* --- Content Area --- */
 .detail-content {
   flex: 1;
-  min-width: 0; /* Prevents flex items from overflowing */
+  min-width: 0;
 }
 
 .detail-hero {
@@ -112,7 +111,7 @@
   transition: background 0.2s;
 }
 .evolution-row.active-form {
-  background: #fff3cd; /* Highlight active form */
+  background: #fff3cd; 
   border: 1px solid #ffeeba;
 }
 
@@ -154,9 +153,21 @@
   padding: 4px 8px;
   border-radius: 12px;
   border: 1px solid transparent;
+  
+  /* [NEW] Flex alignment for icon */
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .req-badge.met { background: #d4edda; color: #155724; border-color: #c3e6cb; }
 .req-badge.unmet { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+
+/* [NEW] Requirement Icon Style */
+.req-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
 
 /* Notes */
 .notes-area {
@@ -169,7 +180,7 @@
   resize: vertical;
 }
 
-/* --- Sidebar --- */
+/* Sidebar */
 .detail-sidebar {
   width: 300px;
   flex-shrink: 0;
@@ -263,6 +274,6 @@
   .detail-sidebar {
     width: 100%;
     position: static;
-    order: -1; /* Put controls on top on mobile */
+    order: -1;
   }
 }
