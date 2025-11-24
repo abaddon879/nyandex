@@ -78,20 +78,36 @@ CREATE TABLE cat_form (
 );
 
 CREATE TABLE cat_form_stat (
+    -- 1. IDENTITY
   cat_id smallint UNSIGNED NOT NULL,
   form_id tinyint UNSIGNED NOT NULL,
+
+  -- 2. CORE STATS (Survivability & Movement)
   health int UNSIGNED NOT NULL,
   knockbacks tinyint UNSIGNED NOT NULL,
   move_speed tinyint UNSIGNED NOT NULL,
-  attack_power int UNSIGNED NOT NULL,
-  attack_range smallint UNSIGNED NOT NULL,
-  attack_frequency_f smallint UNSIGNED NOT NULL COMMENT 'Frames between attack starts',
-  attack_foreswing_f smallint UNSIGNED NOT NULL COMMENT 'Time before damage point (frames)',
-  attack_backswing_f smallint UNSIGNED NOT NULL COMMENT 'Time after damage point (frames)',
-  recharge_time_f smallint UNSIGNED NOT NULL COMMENT 'Cooldown frames',
   cost smallint UNSIGNED NOT NULL,
-  attack_type TINYINT UNSIGNED NOT NULL COMMENT '0=Single Target, 1=Area Attack',
-  hit_count TINYINT UNSIGNED NOT NULL,
+
+  -- 3. ATTACK SUMMARY (The "Face" Stats)
+  attack_power int UNSIGNED NOT NULL COMMENT 'Sum of all hits',
+  attack_range smallint UNSIGNED NOT NULL,
+  attack_type tinyint UNSIGNED NOT NULL COMMENT '0=Single, 1=Area',
+  
+-- 4. DAMAGE BREAKDOWN (Grouped together for easy comparison)
+  attack_hit_1_power int UNSIGNED NOT NULL,
+  attack_hit_2_power int UNSIGNED NOT NULL DEFAULT 0,
+  attack_hit_3_power int UNSIGNED NOT NULL DEFAULT 0,
+
+  -- 5. TIMING BREAKDOWN (Grouped together to visualize the animation)
+  attack_hit_1_f smallint UNSIGNED NOT NULL COMMENT 'Previously foreswing',
+  attack_hit_2_f smallint UNSIGNED NOT NULL DEFAULT 0,
+  attack_hit_3_f smallint UNSIGNED NOT NULL DEFAULT 0,
+  
+  -- 6. CYCLE & RECOVERY
+  attack_frequency_f smallint UNSIGNED NOT NULL COMMENT 'Time between attacks',
+  attack_backswing_f smallint UNSIGNED NOT NULL COMMENT 'Post-attack vulnerability',
+  recharge_time_f smallint UNSIGNED NOT NULL COMMENT 'Respawn time',
+  
   PRIMARY KEY (cat_id, form_id),
   FOREIGN KEY (cat_id, form_id) REFERENCES cat_form (cat_id, form_id) ON DELETE CASCADE
 );

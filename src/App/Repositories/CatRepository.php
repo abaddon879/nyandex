@@ -79,12 +79,16 @@ class CatRepository
         }
 
         // 2. Get all Forms and their Stats
+        // [UPDATED] to match new schema (hit_1_f, powers, etc)
         $sqlForms = "SELECT 
                         f.form_id, f.form_name, f.description, f.required_level, f.required_xp, f.image_url,
                         t.form_name as generic_form_name,
                         s.health, s.knockbacks, s.move_speed, s.attack_power, s.attack_range,
-                        s.attack_frequency_f, s.attack_foreswing_f, s.attack_backswing_f,
-                        s.recharge_time_f, s.cost, s.attack_type, s.hit_count
+                        s.attack_frequency_f, s.attack_backswing_f,
+                        s.recharge_time_f, s.cost, s.attack_type,
+                        -- New Multi-Hit Columns
+                        s.attack_hit_1_f, s.attack_hit_2_f, s.attack_hit_3_f,
+                        s.attack_hit_1_power, s.attack_hit_2_power, s.attack_hit_3_power
                      FROM cat_form f
                      JOIN cat_form_stat s ON f.cat_id = s.cat_id AND f.form_id = s.form_id
                      JOIN form t ON f.form_id = t.form_id
@@ -106,14 +110,10 @@ class CatRepository
             $traitsByFormId[$trait['form_id']][] = (int)$trait['trait_id'];
         }
 
-        // 4. Get all Evolution Requirements (Joined with Item table)
-        // [UPDATED] Added item_name and image_url to the query
+        // 4. Get all Evolution Requirements
         $sqlReqs = "SELECT 
-                        r.form_id, 
-                        r.item_id, 
-                        r.item_qty,
-                        i.item_name,
-                        i.image_url
+                        r.form_id, r.item_id, r.item_qty,
+                        i.item_name, i.image_url
                     FROM cat_form_requirement r
                     JOIN item i ON r.item_id = i.item_id
                     WHERE r.cat_id = :id";
@@ -127,8 +127,8 @@ class CatRepository
             $reqsByFormId[$req['form_id']][] = [
                 'item_id' => (int)$req['item_id'],
                 'item_qty' => (int)$req['item_qty'],
-                'item_name' => $req['item_name'], // [NEW]
-                'image_url' => $req['image_url']  // [NEW]
+                'item_name' => $req['item_name'],
+                'image_url' => $req['image_url']
             ];
         }
 
@@ -136,6 +136,32 @@ class CatRepository
         $formsResult = [];
         foreach ($formsData as $form) {
             $formId = $form['form_id'];
+
+            // [NEW] Build the Hits Array dynamically
+            $hits = [];
+            
+            // Always add Hit 1
+            $hits[] = [
+                'damage' => (int)$form['attack_hit_1_power'],
+                'frame' => (int)$form['attack_hit_1_f']
+            ];
+
+            // Add Hit 2 if it exists (frame > 0)
+            if ((int)$form['attack_hit_2_f'] > 0) {
+                $hits[] = [
+                    'damage' => (int)$form['attack_hit_2_power'],
+                    'frame' => (int)$form['attack_hit_2_f']
+                ];
+            }
+
+            // Add Hit 3 if it exists
+            if ((int)$form['attack_hit_3_f'] > 0) {
+                $hits[] = [
+                    'damage' => (int)$form['attack_hit_3_power'],
+                    'frame' => (int)$form['attack_hit_3_f']
+                ];
+            }
+
             $formsResult[] = [
                 'form_id' => (int)$formId,
                 'form_name' => $form['form_name'],
@@ -151,15 +177,15 @@ class CatRepository
                     'health' => (int)$form['health'],
                     'knockbacks' => (int)$form['knockbacks'],
                     'move_speed' => (int)$form['move_speed'],
-                    'attack_power' => (int)$form['attack_power'],
+                    'attack_power' => (int)$form['attack_power'], // This is the SUM
                     'attack_range' => (int)$form['attack_range'],
                     'attack_frequency_f' => (int)$form['attack_frequency_f'],
-                    'attack_foreswing_f' => (int)$form['attack_foreswing_f'],
                     'attack_backswing_f' => (int)$form['attack_backswing_f'],
                     'recharge_time_f' => (int)$form['recharge_time_f'],
                     'cost' => (int)$form['cost'],
                     'attack_type' => (int)$form['attack_type'],
-                    'hit_count' => (int)$form['hit_count']
+                    'hit_count' => count($hits), // [NEW] Calculated dynamically
+                    'hits' => $hits // [NEW] Array for the frontend
                 ],
                 'traits' => $traitsByFormId[$formId] ?? []
             ];

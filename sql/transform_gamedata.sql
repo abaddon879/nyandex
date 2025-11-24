@@ -168,60 +168,92 @@ ON DUPLICATE KEY UPDATE
 -- Step 4: Populate the `cat_form_stat` table
 -- =================================================================================
 INSERT INTO cat_form_stat (
-    cat_id,
-    form_id,
-    health,
-    knockbacks,
-    move_speed,
-    attack_power,
-    attack_range,
-    attack_frequency_f,
-    attack_foreswing_f,
-    attack_backswing_f,
-    recharge_time_f,
-    cost,
-    attack_type,
-    hit_count
+    -- 1. IDENTITY
+    cat_id, form_id,
+
+    -- 2. CORE STATS
+    health, knockbacks, move_speed, cost,
+
+    -- 3. ATTACK SUMMARY
+    attack_power, attack_range, attack_type,
+
+    -- 4. DAMAGE BREAKDOWN
+    attack_hit_1_power, attack_hit_2_power, attack_hit_3_power,
+
+    -- 5. TIMING BREAKDOWN
+    attack_hit_1_f, attack_hit_2_f, attack_hit_3_f,
+
+    -- 6. CYCLE & RECOVERY
+    attack_frequency_f, attack_backswing_f, recharge_time_f
 )
 SELECT
-    (CAST(us.col_1 AS UNSIGNED) - 1) AS cat_id,
-    
-    CAST(us.col_2 AS UNSIGNED) AS form_id,
-    CAST(us.col_3 AS SIGNED) AS health,
-    CAST(us.col_4 AS SIGNED) AS knockbacks,
-    CAST(us.col_5 AS SIGNED) AS move_speed,
-    CAST(us.col_6 AS SIGNED) AS attack_power,
-    CAST(us.col_8 AS SIGNED) AS attack_range,
-    CAST(us.col_7 AS SIGNED) AS attack_frequency_f,
-    CAST(us.col_16 AS SIGNED) AS attack_foreswing_f,
-    CAST(us.col_18 AS SIGNED) AS attack_backswing_f,
-    CAST(us.col_10 AS SIGNED) AS recharge_time_f,
-    CAST(us.col_9 AS SIGNED) AS cost,
-    CAST(us.col_15 AS UNSIGNED) AS attack_type,
-    1 AS hit_count
+    -- 1. IDENTITY
+    CAST(us.col_1 AS UNSIGNED) - 1,   -- cat_id
+    CAST(us.col_2 AS UNSIGNED),       -- form_id
+
+    -- 2. CORE STATS
+    CAST(us.col_3 AS SIGNED),         -- health
+    CAST(us.col_4 AS SIGNED),         -- knockbacks
+    CAST(us.col_5 AS SIGNED),         -- move_speed
+    CAST(us.col_9 AS SIGNED),         -- cost
+
+    -- 3. ATTACK SUMMARY (Sum of Hits)
+    (
+        CAST(us.col_6 AS SIGNED) + 
+        CAST(IF(us.col_62 = '', 0, us.col_62) AS SIGNED) + 
+        CAST(IF(us.col_63 = '', 0, us.col_63) AS SIGNED)
+    ),
+    CAST(us.col_8 AS SIGNED),         -- attack_range
+    CAST(us.col_15 AS UNSIGNED),      -- attack_type
+
+    -- 4. DAMAGE BREAKDOWN
+    CAST(us.col_6 AS SIGNED),                          -- Hit 1 Pwr
+    CAST(IF(us.col_62 = '', 0, us.col_62) AS SIGNED),  -- Hit 2 Pwr
+    CAST(IF(us.col_63 = '', 0, us.col_63) AS SIGNED),  -- Hit 3 Pwr
+
+    -- 5. TIMING BREAKDOWN
+    CAST(us.col_16 AS SIGNED),                         -- Hit 1 Frame
+    CAST(IF(us.col_64 = '', 0, us.col_64) AS SIGNED),  -- Hit 2 Frame
+    CAST(IF(us.col_65 = '', 0, us.col_65) AS SIGNED),  -- Hit 3 Frame
+
+    -- 6. CYCLE & RECOVERY
+    CAST(us.col_7 AS SIGNED),         -- frequency
+    0,                                -- backswing (Placeholder)
+    CAST(us.col_10 AS SIGNED)         -- recharge
 
 FROM
     temp_unit_stats AS us
 WHERE
-    -- [FIX] Ensure we only insert stats if the (cat_id, form_id) pair
-    -- actually exists in the parent cat_form table.
     EXISTS (
         SELECT 1 FROM cat_form 
         WHERE cat_form.cat_id = (CAST(us.col_1 AS UNSIGNED) - 1)
           AND cat_form.form_id = CAST(us.col_2 AS UNSIGNED)
     )
 ON DUPLICATE KEY UPDATE
+    -- CORE STATS
     health = VALUES(health),
     knockbacks = VALUES(knockbacks),
     move_speed = VALUES(move_speed),
+    cost = VALUES(cost),
+    
+    -- ATTACK SUMMARY
     attack_power = VALUES(attack_power),
     attack_range = VALUES(attack_range),
-    attack_frequency_f = VALUES(attack_frequency_f),
-    attack_foreswing_f = VALUES(attack_foreswing_f),
-    attack_backswing_f = VALUES(attack_backswing_f),
-    recharge_time_f = VALUES(recharge_time_f),
-    cost = VALUES(cost),
     attack_type = VALUES(attack_type),
-    hit_count = VALUES(hit_count);
+    
+    -- DAMAGE BREAKDOWN
+    attack_hit_1_power = VALUES(attack_hit_1_power),
+    attack_hit_2_power = VALUES(attack_hit_2_power),
+    attack_hit_3_power = VALUES(attack_hit_3_power),
+    
+    -- TIMING BREAKDOWN
+    attack_hit_1_f = VALUES(attack_hit_1_f),
+    attack_hit_2_f = VALUES(attack_hit_2_f),
+    attack_hit_3_f = VALUES(attack_hit_3_f),
+    
+    -- CYCLE
+    attack_frequency_f = VALUES(attack_frequency_f),
+    attack_backswing_f = VALUES(attack_backswing_f),
+    recharge_time_f = VALUES(recharge_time_f);
 
 COMMIT;

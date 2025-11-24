@@ -215,7 +215,23 @@ function CatDetailPage() {
           <h2>Combat Stats (Lvl {level} + {plusLevel})</h2>
           <div className="stats-grid">
             <div className="stat-box"><label>HP</label><div className="stat-value">{stats.health.toLocaleString()}</div></div>
-            <div className="stat-box"><label>Attack</label><div className="stat-value">{stats.attack_power.toLocaleString()}</div></div>
+            /* Replace the existing Attack stat-box with this: */
+            <div className="stat-box">
+                <label>Attack</label>
+                <div className="stat-value">{stats.attack_power.toLocaleString()}</div>
+                
+                {/* [NEW] Show Multi-Hit Breakdown */}
+                {stats.hits.length > 1 && (
+                    <div style={{fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px'}}>
+                        {stats.hits.map((h, i) => (
+                            <span key={i}>
+                                {i > 0 && ' + '}
+                                {h.damage.toLocaleString()}
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </div>
             <div className="stat-box"><label>DPS</label><div className="stat-value">{stats.dps.toLocaleString()}</div></div>
             <div className="stat-box"><label>Range</label><div className="stat-value">{currentForm.stats.attack_range}</div></div>
             <div className="stat-box"><label>Speed</label><div className="stat-value">{currentForm.stats.move_speed}</div></div>
