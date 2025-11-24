@@ -172,10 +172,17 @@ function CatDetailPage() {
     return staticData.forms.find(f => f.form_id == formId) || staticData.forms[0];
   }, [staticData, formId]);
 
-  const stats = useMemo(() => {
-    if (!currentForm?.stats) return null;
-    return StatCalculator.getFinalStats(currentForm.stats, level, plusLevel);
-  }, [currentForm, level, plusLevel]);
+const stats = useMemo(() => {
+    if (!currentForm?.stats || !staticData) return null;
+    
+    return StatCalculator.getFinalStats(
+        currentForm.stats, 
+        level, 
+        plusLevel, 
+        staticData.rarity_id,
+        staticData.cat_id // [NEW] Pass this for exception handling
+    );
+  }, [currentForm, level, plusLevel, staticData]);
 
 
   if (isLoading) return <div className="page-loading" style={{padding:'2rem'}}>Loading Cat Details...</div>;
@@ -215,7 +222,6 @@ function CatDetailPage() {
           <h2>Combat Stats (Lvl {level} + {plusLevel})</h2>
           <div className="stats-grid">
             <div className="stat-box"><label>HP</label><div className="stat-value">{stats.health.toLocaleString()}</div></div>
-            /* Replace the existing Attack stat-box with this: */
             <div className="stat-box">
                 <label>Attack</label>
                 <div className="stat-value">{stats.attack_power.toLocaleString()}</div>
@@ -237,7 +243,12 @@ function CatDetailPage() {
             <div className="stat-box"><label>Speed</label><div className="stat-value">{currentForm.stats.move_speed}</div></div>
             <div className="stat-box"><label>Cost</label><div className="stat-value">{currentForm.stats.cost}</div></div>
             <div className="stat-box"><label>Knockbacks</label><div className="stat-value">{currentForm.stats.knockbacks}</div></div>
-            <div className="stat-box"><label>Attack Freq</label><div className="stat-value">{(currentForm.stats.attack_frequency_f / 30).toFixed(2)}s</div></div>
+            <div className="stat-box">
+                <label>Attack Freq</label>
+                <div className="stat-value">
+                    {stats.attack_frequency_s.toFixed(2)}s
+                </div>
+            </div>
           </div>
         </section>
         )}
