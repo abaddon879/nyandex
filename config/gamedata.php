@@ -67,6 +67,7 @@ return [
         'resLocal/nyankoPictureBook2_en.csv',                               // Ability descriptions
         'resLocal/SkillDescriptions.csv',                                   // Talent descriptions
         'resLocal/Unit_Explanation\d+_en\.csv',                             // Unit names and description
+        'ImageDataLocal/.*\d{3}_[fcsu]02\.maanim',                          // Captures only Attack animations (f02, c02, s02, u02)
     ],
     'unit_images_storage_dir' => 'storage/app/units/images',
     'unit_images_to_move' => [

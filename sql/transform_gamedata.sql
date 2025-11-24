@@ -217,9 +217,9 @@ SELECT
     CAST(IF(us.col_65 = '', 0, us.col_65) AS SIGNED),  -- Hit 3 Frame
 
     -- 6. CYCLE & RECOVERY
-    CAST(us.col_7 AS SIGNED),         -- frequency
-    0,                                -- backswing (Placeholder)
-    CAST(us.col_10 AS SIGNED)         -- recharge
+    CAST(us.col_7 AS SIGNED),                           -- frequency
+    CAST(us.calculated_backswing AS SIGNED),            -- backswing (Placeholder)
+    CAST(us.col_10 AS SIGNED)                           -- recharge
 
 FROM
     temp_unit_stats AS us

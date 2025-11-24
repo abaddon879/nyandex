@@ -43,7 +43,30 @@ class EtlController
     public function run(): void
     {
         $this->loadAllCsvsToTempTables();
+        $this->calculateBackswings();
         $this->applySqlTransformations();
+    }
+
+    private function calculateBackswings(): void
+    {
+        logMessage("Initializing Backswing Calculation...", 'INFO', 'ETL');
+        
+        try {
+            $basePath = realpath(dirname(__DIR__, 4));
+            $storageDir = $this->config['unit_data_storage_dir'] ?? 'storage/app/units/data';
+            
+            $maanimPath = $basePath . DIRECTORY_SEPARATOR . $storageDir . DIRECTORY_SEPARATOR . $this->version;
+            
+            if (is_dir($maanimPath)) {
+                // [UPDATED CLASS NAME]
+                $calculator = new CalculateBackswingController($this->pdo, $maanimPath);
+                $calculator->runOnTempTable();
+            } else {
+                logMessage("Maanim directory not found at $maanimPath. Backswing defaults to 0.", 'WARNING', 'ETL');
+            }
+        } catch (Exception $e) {
+            logMessage("Error during Backswing Calculation: " . $e->getMessage(), 'ERROR', 'ETL');
+        }
     }
 
     /**
