@@ -249,7 +249,7 @@ function updateGameData() {
 // Function to call the /api/versions/latest endpoint and retrieve the latest version
 function getLatestVersionFromAPI() {
     $config = \App\Controllers\GameData\ConfigLoader::load();
-    $apiUrl = $config['api_base_url'] . '/admin/versions/latest';
+    $apiUrl = $config['api_base_url'] . '/versions/latest';
     $apiKey = $_ENV['ADMIN_API_KEY'];
 
     $ch = curl_init($apiUrl);
