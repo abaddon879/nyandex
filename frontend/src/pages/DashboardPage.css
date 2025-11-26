@@ -4,7 +4,7 @@
   max-width: 1800px;
   margin: 0 auto;
   width: 100%;
-  padding-bottom: 1rem;
+  padding-bottom: 0.5rem;
 }
 
 /* --- COMPACT GRID LAYOUT --- */
@@ -13,7 +13,7 @@
   /* 12 Columns */
   grid-template-columns: repeat(12, minmax(0, 1fr));
   /* Tighter spacing */
-  gap: 12px; 
+  gap: 8px; 
   margin-top: 0;
 }
 
@@ -80,8 +80,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
   border-bottom: 1px solid #f1f5f9;
 }
 

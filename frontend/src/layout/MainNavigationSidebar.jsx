@@ -1,54 +1,64 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom'; // Use NavLink for active styling
+import { NavLink } from 'react-router-dom';
+import './MainNavigationSidebar.css';
 
 // Component to hold the Material Icon.
-const MaterialIcon = ({ name }) => (
+const MaterialIcon = ({ name, className = '' }) => (
     <span 
-        className="material-symbols-outlined" 
-        style={{ fontSize: '1.2rem', marginRight: '10px' }}
+        className={`material-symbols-outlined ${className}`} 
+        style={{ fontSize: '1.25rem', marginRight: '12px' }}
     >
         {name}
     </span>
 );
 
-// New CSS file for the sidebar
-import './MainNavigationSidebar.css';
-
-function MainNavigationSidebar() {
-  // This is the style that NavLink will apply when the route is active
-  const activeStyle = {
-    backgroundColor: 'var(--color-accent-primary)',
-    color: 'var(--color-text-primary)',
-    fontWeight: '600'
-  };
-
+function MainNavigationSidebar({ onNavigate }) {
   return (
     <aside className="main-sidebar">
-      <h1 className="sidebar-title">NyanDex</h1>
+      {/* 1. Sidebar Brand Area (Matches Top Bar Height) */}
+      <div className="sidebar-brand">
+        <span className="brand-icon">🐾</span>
+        <span className="brand-text">NyanDex</span>
+      </div>
+
+      {/* 2. Navigation Links */}
       <nav className="sidebar-nav">
+        <div className="nav-group-label">Menu</div>
+        
         <NavLink 
           to="/dashboard" 
-          className="nav-link"
-          style={({ isActive }) => (isActive ? activeStyle : undefined)}
+          onClick={onNavigate}
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
-          <MaterialIcon name="dashboard" /> Dashboard
+          <MaterialIcon name="dashboard" />
+          <span>Dashboard</span>
         </NavLink>
+
         <NavLink 
           to="/catalog" 
-          className="nav-link"
-          style={({ isActive }) => (isActive ? activeStyle : undefined)}
+          onClick={onNavigate}
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
-          <MaterialIcon name="pets" /> Catalog
+          <MaterialIcon name="pets" />
+          <span>Catalog</span>
         </NavLink>
+
         <NavLink 
           to="/inventory" 
-          className="nav-link"
-          style={({ isActive }) => (isActive ? activeStyle : undefined)}
+          onClick={onNavigate}
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
-          <MaterialIcon name="inventory_2" /> Inventory
+          <MaterialIcon name="inventory_2" />
+          <span>Inventory</span>
         </NavLink>
       </nav>
+
+      {/* 3. Footer / Meta (Optional) */}
+      <div className="sidebar-footer">
+        <span className="version-text">v14.7.0 Data</span>
+      </div>
     </aside>
   );
 }
+
 export default MainNavigationSidebar;

@@ -1,22 +1,95 @@
-.sidebar-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 var(--space-3) 0;
-  color: var(--color-text-primary);
+.main-sidebar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border-right: 1px solid var(--color-border);
+  width: 100%; /* Ensure it fills the wrapper */
 }
+
+/* 1. Brand Area - Strict Height alignment */
+.sidebar-brand {
+  height: 64px; /* Fixed height to match TopHeader */
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--color-border); /* Matching border */
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  font-size: 1.5rem;
+  margin-right: 12px;
+}
+
+.brand-text {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+/* 2. Navigation */
+.sidebar-content {
+  flex: 1;
+  padding: 24px 12px; /* Adjusted padding */
+  overflow-y: auto;
+}
+
+.nav-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  padding-left: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 4px;
 }
+
 .nav-link {
-  display: block;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 6px;
   text-decoration: none;
-  color: var(--color-text-secondary);
-  font-weight: 500;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
 }
+
+.nav-icon {
+  margin-right: 12px;
+  color: #94a3b8;
+  font-size: 1.25rem;
+}
+
 .nav-link:hover {
-  background-color: var(--color-border);
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+/* Active State */
+.nav-link.active {
+  background-color: #fffbeb; /* Amber-50 */
+  color: #b45309; /* Amber-700 */
+}
+
+.nav-link.active .nav-icon {
+  color: #d97706; /* Amber-600 */
+}
+
+/* 3. Footer */
+.sidebar-footer {
+  padding: 16px;
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  text-align: center;
+  border-top: 1px solid var(--color-border);
 }
