@@ -80,41 +80,6 @@
     pointer-events: none;
 }
 
-/* "Uber Rare" -> rarity-uber-rare */
-.rarity-uber-rare { 
-    background-color: #fffbeb; 
-    color: #b45309; 
-    border: 1px solid #fcd34d; 
-}
-
-/* "Super Rare" -> rarity-super-rare */
-.rarity-super-rare { 
-    background-color: #eff6ff; 
-    color: #1e40af; 
-    border: 1px solid #bfdbfe; 
-}
-
-/* "Rare" -> rarity-rare */
-.rarity-rare { 
-    background-color: #fff7ed; 
-    color: #c2410c; 
-    border: 1px solid #fed7aa; 
-}
-
-/* "Special" -> rarity-special */
-.rarity-special { 
-    background-color: #fdf4ff; 
-    color: #86198f; 
-    border: 1px solid #f0abfc; 
-}
-
-/* "Normal" -> rarity-normal */
-.rarity-normal { 
-    background-color: #f1f5f9; 
-    color: #475569; 
-    border: 1px solid #cbd5e1; 
-}
-
 /* Stats Grid */
 .stats-grid {
   display: grid;

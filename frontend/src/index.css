@@ -137,6 +137,44 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 6px;
 }
 
+
+/* --- Global Rarity Colors (Dynamic) --- */
+.rarity-legend-rare {
+  background: linear-gradient(135deg, #fff0f0, #f0f8ff);
+  color: #333;
+  border: 1px solid #d1d5db;
+  position: relative;
+}
+.rarity-legend-rare::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 4px; 
+    padding: 1px; 
+    background: linear-gradient(to right, #ff6b6b, #feca57, #48dbfb, #ff9ff3); 
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+.rarity-uber-rare { 
+    background-color: #fffbeb; color: #b45309; border: 1px solid #fcd34d; 
+}
+.rarity-super-rare { 
+    background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; 
+}
+.rarity-rare { 
+    background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; 
+}
+.rarity-special { 
+    background-color: #fdf4ff; color: #86198f; border: 1px solid #f0abfc; 
+}
+.rarity-normal { 
+    background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; 
+}
+
 /* Mobile Sidebar Logic */
 .mobile-overlay {
   display: none;

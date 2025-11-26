@@ -9,7 +9,6 @@ import './QuickEvoView.css';
 const RAW_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || '';
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, '');
 
-// Component to hold the Material Icon.
 const MaterialIcon = ({ name, style = {} }) => (
     <span 
         className="material-symbols-outlined" 
@@ -19,8 +18,9 @@ const MaterialIcon = ({ name, style = {} }) => (
     </span>
 );
 
+// Fallback map if API doesn't send rarity_name
 const RARITY_MAP = {
-  1: 'Special', 2: 'Rare', 3: 'Super Rare', 4: 'Uber Rare', 5: 'Legend'
+  1: 'Special', 2: 'Rare', 3: 'Super Rare', 4: 'Uber Rare', 5: 'Legend Rare'
 };
 
 const CATSEYE_FALLBACK_IMAGES = {
@@ -28,12 +28,12 @@ const CATSEYE_FALLBACK_IMAGES = {
     'Rare': 'gatyaitemD_51_f.png',
     'Super Rare': 'gatyaitemD_52_f.png',
     'Uber Rare': 'gatyaitemD_53_f.png',
-    'Legend': 'gatyaitemD_54_f.png',
+    'Legend': 'gatyaitemD_54_f.png', 
+    'Legend Rare': 'gatyaitemD_54_f.png', // Added alias for safety
     'Dark': 'gatyaitemD_58_f.png'
 };
 
-function QuickEvoView({ catId, userMap, onDataChange }) {
-  // ... (State and Fetch logic remains exactly the same) ...
+function QuickEvoView({ catId, onDataChange }) {
   const { userId } = authStore.getState();
 
   const [staticData, setStaticData] = useState(null);
@@ -102,7 +102,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     fetchData();
   }, [fetchData]);
 
-  // ... (findCatseyeData, handleFormClick, handleSave, handleToggle, currentForm, nextForm logic remains same) ...
   const findCatseyeData = (keyword) => {
       if (staticData && staticData.catseyes) {
           if (keyword === 'Dark' && staticData.catseyes.dark) return staticData.catseyes.dark;
@@ -111,8 +110,9 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
           }
       }
       if (!inventoryList) return null;
+      // Relaxed matching to handle "Legend" vs "Legend Rare"
       const found = inventoryList.find(i => 
-          i.item_type === 'Catseye' && i.item_name.includes(keyword)
+          i.item_type === 'Catseye' && i.item_name.includes(keyword.split(' ')[0]) 
       );
       return found || null;
   };
@@ -154,7 +154,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
         await userTrackerService.pinCat(userId, catId);
         setIsPinned(true);
       }
-      setIsPinned(!isPinned);
     } catch (err) {
       alert(`Failed to update pin: ${err.message}`);
     }
@@ -173,6 +172,12 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
     return staticData.forms[currentIndex + 1] || null;
   }, [staticData, currentForm]);
 
+  // [HELPER] Get Safe Rarity Name
+  const getSafeRarityName = () => {
+      if (!staticData) return 'Normal';
+      return staticData.rarity_name || RARITY_MAP[staticData.rarity_id] || 'Normal';
+  };
+
   const getMissingLevelRequirements = () => {
       if (!nextForm || !nextForm.evolution) return [];
       
@@ -183,7 +188,7 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
       const currentTotal = level + plusLevel;
       if (currentTotal >= reqLvl) return [{ type: 'met', label: `Level ${reqLvl}` }];
 
-      const rarityName = RARITY_MAP[staticData.rarity_id];
+      const rarityName = getSafeRarityName();
       const levelsToGain = reqLvl - currentTotal;
       const currentBase = level;
       const targetBase = currentBase + levelsToGain;
@@ -205,8 +210,9 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
 
       if (stdEyes > 0) {
           const itemData = findCatseyeData(rarityName);
-          const name = itemData ? itemData.item_name : `${rarityName} Catseye`;
+          // Fallback for image if itemData not found
           const image = itemData ? itemData.image_url : CATSEYE_FALLBACK_IMAGES[rarityName];
+          const name = itemData ? itemData.item_name : `${rarityName} Catseye`;
           const owned = itemData ? Number(itemData.item_quantity) : 0;
           
           reqs.push({ 
@@ -256,13 +262,25 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
   
   const levelReqs = getMissingLevelRequirements();
 
+  // [NEW] Rarity Badge Logic
+  const rarityName = getSafeRarityName();
+  const rarityClass = `rarity-${rarityName.toLowerCase().replace(/\s+/g, '-')}`;
+
   return (
     <aside className="quick-evo-view">
       <div className="quick-evo-card">
         <div className="quick-evo-header">
           <div>
              <h3 className="quick-evo-title">{currentForm.form_name}</h3>
-             <span className="text-secondary" style={{ fontSize: '0.8rem' }}>ID: #{displayId}</span>
+             
+             {/* [NEW] ID and Rarity Badge Row */}
+             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                <span className={`badge ${rarityClass}`} style={{ fontSize: '0.7rem' }}>
+                    {rarityName}
+                </span>
+                <span className="text-secondary" style={{ fontSize: '0.8rem' }}>#{displayId}</span>
+             </div>
+
           </div>
           <BaseButton onClick={handleTogglePin} variant="secondary" style={{ padding: '4px 8px' }}>
             <MaterialIcon name="push_pin" style={{ color: isPinned ? 'var(--color-accent-primary)' : 'var(--color-text-secondary)' }} />
@@ -328,7 +346,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                     if (req.type === 'item') {
                         const isComplete = req.owned >= req.needed;
                         const pct = req.needed > 0 ? Math.min(100, (req.owned / req.needed) * 100) : 100;
-                        // [UPDATED] Clamped Display Value
                         const displayOwned = Math.min(req.owned, req.needed);
                         
                         return (
@@ -373,7 +390,6 @@ function QuickEvoView({ catId, userMap, onDataChange }) {
                   const userQty = inventoryMap.get(req.item_id) || 0;
                   const isComplete = userQty >= req.item_qty;
                   const percent = Math.min(100, (userQty / req.item_qty) * 100);
-                  // [UPDATED] Clamped Display Value
                   const displayOwned = Math.min(userQty, req.item_qty);
 
                   return (

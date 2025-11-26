@@ -19,9 +19,10 @@ class CatRepository
     {
         $pdo = $this->database->getConnection();
 
-        $sqlCats = "SELECT cat_id, cat_order_id, rarity_id
-                    FROM cat
-                    ORDER BY cat_order_id ASC";
+        $sqlCats = "SELECT c.cat_id, c.cat_order_id, c.rarity_id, r.rarity_name
+                    FROM cat c
+                    JOIN rarity r ON c.rarity_id = r.rarity_id
+                    ORDER BY c.cat_order_id ASC";
         
         $stmtCats = $pdo->query($sqlCats);
         $cats = $stmtCats->fetchAll(PDO::FETCH_ASSOC);
@@ -48,6 +49,7 @@ class CatRepository
                 'cat_id' => (int)$cat['cat_id'],
                 'cat_order_id' => (int)$cat['cat_order_id'],
                 'rarity_id' => (int)$cat['rarity_id'],
+                'rarity_name' => $cat['rarity_name'], // [FIX] Add this line
                 'forms' => $formsByCatId[$catId] ?? []
             ];
         }
