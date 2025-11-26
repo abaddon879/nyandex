@@ -53,6 +53,7 @@ CREATE TABLE cat (
     boostable TINYINT NOT NULL COMMENT '-1=Normal(20), 1=Gacha(1), 30=Boostable',
     max_level TINYINT UNSIGNED NOT NULL,
     max_plus_level TINYINT UNSIGNED NOT NULL,
+    level_curve JSON NULL COMMENT 'Array of growth % per level (from unitlevel.csv)',
     introduced_version_id VARCHAR(15) DEFAULT NULL,
     FOREIGN KEY (rarity_id) REFERENCES rarity(rarity_id),
     FOREIGN KEY (introduced_version_id) REFERENCES version(version_id),

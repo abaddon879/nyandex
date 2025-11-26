@@ -78,6 +78,9 @@ class CatRepository
             return false;
         }
 
+        // [NEW] Decode Level Curve
+        $levelCurve = !empty($cat['level_curve']) ? json_decode($cat['level_curve']) : [];
+
         // 2. Get all Forms and their Stats
         // [UPDATED] to match new schema (hit_1_f, powers, etc)
         $sqlForms = "SELECT 
@@ -197,6 +200,7 @@ class CatRepository
             'boostable' => (int)$cat['boostable'],
             'max_level' => (int)$cat['max_level'],
             'max_plus_level' => (int)$cat['max_plus_level'],
+            'level_curve' => $levelCurve, // <--- Add this line
             'forms' => $formsResult
         ];
     }

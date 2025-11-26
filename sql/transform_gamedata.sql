@@ -3,7 +3,7 @@
 START TRANSACTION;
 
 -- =================================================================================
--- Step 1: Populate the `cat` table
+-- Step 1: Populate the `cat` table (Base Data)
 -- =================================================================================
 INSERT INTO cat (cat_id, cat_order_id, rarity_id, boostable, max_level, max_plus_level, introduced_version_id)
 SELECT
@@ -30,6 +30,20 @@ ON DUPLICATE KEY UPDATE
     max_level = VALUES(max_level),
     max_plus_level = VALUES(max_plus_level);
 
+-- =================================================================================
+-- Step 1.5: Update `cat` table with Level Curves
+-- =================================================================================
+UPDATE cat c
+JOIN temp_unitlevel t ON c.cat_id = (t.id - 1)
+SET c.level_curve = JSON_ARRAY(
+    CAST(t.col_1 AS UNSIGNED), CAST(t.col_2 AS UNSIGNED), CAST(t.col_3 AS UNSIGNED), 
+    CAST(t.col_4 AS UNSIGNED), CAST(t.col_5 AS UNSIGNED), CAST(t.col_6 AS UNSIGNED), 
+    CAST(t.col_7 AS UNSIGNED), CAST(t.col_8 AS UNSIGNED), CAST(t.col_9 AS UNSIGNED), 
+    CAST(t.col_10 AS UNSIGNED), CAST(t.col_11 AS UNSIGNED), CAST(t.col_12 AS UNSIGNED), 
+    CAST(t.col_13 AS UNSIGNED), CAST(t.col_14 AS UNSIGNED), CAST(t.col_15 AS UNSIGNED), 
+    CAST(t.col_16 AS UNSIGNED), CAST(t.col_17 AS UNSIGNED), CAST(t.col_18 AS UNSIGNED), 
+    CAST(t.col_19 AS UNSIGNED), CAST(t.col_20 AS UNSIGNED)
+);
 
 -- =================================================================================
 -- Step 2: Populate the `cat_form` table
