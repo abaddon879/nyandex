@@ -32,20 +32,6 @@ const CATSEYE_FALLBACK_IMAGES = {
     'Dark': 'gatyaitemD_58_f.png'
 };
 
-const StatCalculator = {
-  getFinalStats: (stats, level, plus) => {
-    if (!stats) return { health: 1, attack_power: 1, dps: 1 };
-    const totalLevel = level + plus;
-    const calculatedHealth = (stats.health * (1 + (totalLevel - 1) * 0.2)); 
-    const calculatedAttack = (stats.attack_power * (1 + (totalLevel - 1) * 0.2)); 
-    return {
-        health: Math.floor(calculatedHealth),
-        attack_power: Math.floor(calculatedAttack),
-        dps: Math.round(calculatedAttack / (stats.attack_frequency_f / 30)) || 0
-    };
-  }
-};
-
 function QuickEvoView({ catId, userMap, onDataChange }) {
   // ... (State and Fetch logic remains exactly the same) ...
   const { userId } = authStore.getState();

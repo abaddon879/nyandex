@@ -71,7 +71,12 @@ class CatRepository
         $pdo = $this->database->getConnection();
         
         // 1. Get Base Cat Data
-        $stmt = $pdo->prepare("SELECT * FROM cat WHERE cat_id = :id");
+        $sql = "SELECT c.*, r.rarity_name 
+                FROM cat c
+                JOIN rarity r ON c.rarity_id = r.rarity_id
+                WHERE c.cat_id = :id";
+                
+        $stmt = $pdo->prepare($sql);
         $stmt->execute(['id' => $cat_id]);
         $cat = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$cat) {
@@ -197,6 +202,7 @@ class CatRepository
         return [
             'cat_id' => (int)$cat['cat_id'],
             'rarity_id' => (int)$cat['rarity_id'],
+            'rarity_name' => $cat['rarity_name'], // [NEW] Return the name directly
             'boostable' => (int)$cat['boostable'],
             'max_level' => (int)$cat['max_level'],
             'max_plus_level' => (int)$cat['max_plus_level'],

@@ -179,8 +179,7 @@ const stats = useMemo(() => {
         currentForm.stats, 
         level, 
         plusLevel, 
-        staticData.rarity_id,
-        staticData.cat_id // [NEW] Pass this for exception handling
+        staticData.level_curve // <--- NEW: Pass the curve directly!
     );
   }, [currentForm, level, plusLevel, staticData]);
 
@@ -191,6 +190,8 @@ const stats = useMemo(() => {
 
   const maxLevel = staticData.max_level || 50;
   const maxPlus = staticData.max_plus_level || 0;
+
+  const rarityClass = `rarity-${staticData.rarity_name.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
     <div className="cat-detail-page">
@@ -208,7 +209,9 @@ const stats = useMemo(() => {
           <div className="hero-info">
             <h1 className="cat-name">{currentForm.form_name}</h1>
             <div className="cat-meta">
-                <span className="badge rarity-badge">Rarity: {staticData.rarity_id}</span>
+                <span className={`badge ${rarityClass}`}>
+                    {staticData.rarity_name}
+                </span>
                 <span className="badge id-badge">#{staticData.cat_order_id ?? staticData.cat_id}</span>
             </div>
             <p className="cat-description">
