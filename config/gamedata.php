@@ -2,6 +2,10 @@
 
 $packageName = 'jp.co.ponos.battlecatsen';
 
+$getEnv = function($key, $default = null) {
+    return $_SERVER[$key] ?? getenv($key) ?? $_ENV[$key] ?? $default;
+};
+
 return [
 
     //======================================================================
@@ -172,12 +176,12 @@ return [
      * Database & API Connection
      * Credentials are loaded from the .env file for security.
      */
-    'api_base_url' => 'http://nyandex.test/api',
+    'api_base_url' => $getEnv('API_BASE_URL', 'http://nyandex.test/api'),
     'db' => [
-        'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
-        'port' => $_ENV['DB_PORT'] ?? '3306',
-        'database' => $_ENV['DB_NAME'] ?? 'nyandb',
-        'username' => $_ENV['DB_USER'] ?? 'root',
-        'password' => $_ENV['DB_PASS'] ?? '',
+        'host' => $getEnv('DB_HOST', '127.0.0.1'),
+        'port' => $getEnv('DB_PORT', '3306'),
+        'database' => $getEnv('DB_NAME', 'nyandb'),
+        'username' => $getEnv('DB_USER', 'root'),
+        'password' => $getEnv('DB_PASS', ''),
     ],
 ];

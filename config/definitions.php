@@ -1,26 +1,32 @@
 <?php
 
 use App\Database;
-use Psr\Container\ContainerInterface; // <-- Import the container interface
-use Psr\Http\Message\ResponseFactoryInterface; // <-- Add this import
-use Slim\Psr7\Factory\ResponseFactory;        // <-- Add this import
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
+use Slim\Psr7\Factory\ResponseFactory;
 use Slim\Views\PhpRenderer;
 
 return [
 
     Database::class => function() {
+        // HELPER: Try $_SERVER (Docker), then getenv() (System), then $_ENV (Dotenv)
+        $getEnv = fn($key, $default) => $_SERVER[$key] ?? getenv($key) ?? $_ENV[$key] ?? $default;
 
-        return new Database(host: $_ENV['DB_HOST'],
-                            name: $_ENV['DB_NAME'],
-                            user: $_ENV['DB_USER'],
-                            password: $_ENV['DB_PASS']);
+        $host = $getEnv('DB_HOST', '127.0.0.1');
+        $name = $getEnv('DB_NAME', 'nyandb');
+        $user = $getEnv('DB_USER', 'root');
+        $pass = $getEnv('DB_PASS', '');
+
+        return new Database(
+            host: $host,
+            name: $name,
+            user: $user,
+            password: (string)$pass
+        );
     },
 
     PDO::class => function (ContainerInterface $c) {
-        // First, get the Database object from the container
-        $database = $c->get(Database::class); 
-        
-        // Then, return the PDO connection from it
+        $database = $c->get(Database::class);
         return $database->getConnection();
     },
     
@@ -29,11 +35,8 @@ return [
     },
 
     PhpRenderer::class => function() {
-
         $render = new PhpRenderer(__DIR__ . '/../views');
-
         $render->setLayout('layout.php');
-
         return $render;
     }
 ];

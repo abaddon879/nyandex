@@ -250,7 +250,7 @@ function updateGameData() {
 function getLatestVersionFromAPI() {
     $config = \App\Controllers\GameData\ConfigLoader::load();
     $apiUrl = $config['api_base_url'] . '/versions/latest';
-    $apiKey = $_ENV['ADMIN_API_KEY'];
+    $apiKey = $_SERVER['ADMIN_API_KEY'] ?? getenv('ADMIN_API_KEY') ?? $_ENV['ADMIN_API_KEY'];
 
     $ch = curl_init($apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -291,7 +291,7 @@ function getLatestVersionFromAPI() {
 function postNewVersionToAPI($data) {
     $config = \App\Controllers\GameData\ConfigLoader::load();
     $apiUrl = $config['api_base_url'] . '/admin/versions';
-    $apiKey = $_ENV['ADMIN_API_KEY'];
+    $apiKey = $_SERVER['ADMIN_API_KEY'] ?? getenv('ADMIN_API_KEY') ?? $_ENV['ADMIN_API_KEY'];
 
     $ch = curl_init($apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -326,7 +326,7 @@ function postNewVersionToAPI($data) {
 function patchNewVersionToAPI($data) {
     $config = \App\Controllers\GameData\ConfigLoader::load();
     $apiUrl = $config['api_base_url'] . '/admin/versions/' . urlencode($data['version_id']);
-    $apiKey = $_ENV['ADMIN_API_KEY'];
+    $apiKey = $_SERVER['ADMIN_API_KEY'] ?? getenv('ADMIN_API_KEY') ?? $_ENV['ADMIN_API_KEY'];
 
     if (!isset($data['download_date'])) {
         logMessage("Error: download_date is missing.", 'ERROR', 'API');
