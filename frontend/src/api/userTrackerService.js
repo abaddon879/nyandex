@@ -1,3 +1,8 @@
+// Centralized URL configuration
+// In Vercel, you will set VITE_API_BASE_URL to your Tunnel URL.
+// In Local Dev, you leave it empty, and it uses the Vite Proxy.
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 async function apiFetch(endpoint, method = 'GET', body = null) {
     const headers = {
         'Content-Type': 'application/json',
@@ -7,7 +12,10 @@ async function apiFetch(endpoint, method = 'GET', body = null) {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`/api${endpoint}`, {
+    // This constructs the full URL.
+    // Example Prod: "https://your-tunnel.com/api/users/me"
+    // Example Dev:  "/api/users/me"
+    const response = await fetch(`${BASE_URL}/api${endpoint}`, {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
