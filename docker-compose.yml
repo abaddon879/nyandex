@@ -49,10 +49,9 @@ services:
   # 4. Secure Public Access (Cloudflare Tunnel)
   tunnel:
     image: cloudflare/cloudflared:latest
-    command: tunnel run
-    environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     restart: always
+    # This command tells Cloudflare to create a temporary URL forwarding to your "web" container
+    command: tunnel --url http://web:80
     networks:
       - nyandex-net
 
