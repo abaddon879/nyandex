@@ -192,6 +192,8 @@ function processGameUpdate($googlePlayVersion, $releaseDate, $apiMethod) {
                 logMessage("Unit source directory not found, skipping: $unitSource", 'WARNING', 'Main');
             }
 
+            
+
         } catch (Exception $e) {
             logMessage('Error during public asset copy: ' . $e->getMessage(), 'ERROR', 'Main');
         }
@@ -222,14 +224,19 @@ function updateGameData() {
 
         // 2. Fetch the latest version from the database
         $latestVersionInfo = getLatestVersionFromAPI();
-        if (!$latestVersionInfo) {
-            logMessage("Failed to fetch latest version from API. Cannot continue.", 'ERROR', 'Main');
-            return;
-        }
+        
+        // --- [CHANGE START] Default to 0.0.0 on First Load ---
+        $dbVersion = '0.0.0';
+        $downloadDateSet = false;
 
-        $dbVersion = $latestVersionInfo['version'];
-        $downloadDateSet = !empty($latestVersionInfo['download_date']);
-        logMessage('Latest Version in DB: ' . $dbVersion . " (" . $latestVersionInfo['release_date'] . ")", 'INFO', 'Main');
+        if ($latestVersionInfo) {
+            $dbVersion = $latestVersionInfo['version'];
+            $downloadDateSet = !empty($latestVersionInfo['download_date']);
+            logMessage('Latest Version in DB: ' . $dbVersion . " (" . $latestVersionInfo['release_date'] . ")", 'INFO', 'Main');
+        } else {
+            logMessage("No version found in database (or API failed). Proceeding as fresh install (v0.0.0).", 'WARNING', 'Main');
+        }
+        // --- [CHANGE END] ---
 
         // 3. Compare versions and decide on the action
         if (version_compare($googlePlayVersion, $dbVersion, '>')) {
@@ -274,6 +281,13 @@ function getLatestVersionFromAPI() {
 
     curl_close($ch);
     $data = json_decode($response, true);
+
+    // --- [CHANGE START] Handle empty database response without warning ---
+    if ($data === null) {
+        // If the API returned "null" (meaning no rows), we just return null gracefully.
+        return null;
+    }
+    // --- [CHANGE END] ---
 
     if (isset($data['version_id']) && isset($data['release_date'])) {
         return [

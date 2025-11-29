@@ -158,6 +158,12 @@ return [
             'destination_table' => 'unit_stats', // This becomes 'temp_unit_stats'
             'source_dir_key' => 'unit_data_storage_dir',
             'has_header' => false, // As per your CsvMergeController logic
+        ],
+        'unit_levels' => [
+            'source_file' => 'unitlevel.csv',
+            'destination_table' => 'unitlevel', // Creates temp_unitlevel
+            'source_dir_key' => 'unit_data_storage_dir',
+            'has_header' => false, // This ensures columns are named col_1, col_2, etc.
         ],        
     ],
 
