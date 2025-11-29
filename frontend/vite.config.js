@@ -1,19 +1,21 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite' // Import loadEnv
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5173, // This is where the frontend runs
-    proxy: {
-      // This is the magic key.
-      // Any request from your React app starting with '/api'
-      // will be forwarded to your XAMPP server.
-      '/api': {
-        target: 'http://nyandex.test', // Your XAMPP virtual host
-        changeOrigin: true, // Recommended for virtual hosts
-        secure: false,      // Do not validate SSL certs
+export default defineConfig(({ mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
+    plugins: [react()],
+    server: {
+      port: 5173,
+      proxy: {
+        '/api': {
+          // Use the env var or default to your local test domain
+          target: env.VITE_PROXY_TARGET || 'http://nyandex.test',
+          changeOrigin: true,
+          secure: false,
+        }
       }
     }
   }
