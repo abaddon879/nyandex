@@ -98,6 +98,15 @@ class EtlController
 
                 $fileHandle = fopen($csvFilePath, 'r');
                 if (!$fileHandle) throw new Exception("Could not open CSV file.");
+
+                $firstRawLine = fgets($fileHandle);
+                rewind($fileHandle); // Reset pointer to start
+                
+                $delimiter = ','; // Default
+                if ($firstRawLine && strpos($firstRawLine, '|') !== false) {
+                    $delimiter = '|';
+                    logMessage("Detected PIPE delimiter for $csvFilePath", 'DEBUG', 'ETL');
+                }
                 
                 $firstLine = fgetcsv($fileHandle);
                 rewind($fileHandle);

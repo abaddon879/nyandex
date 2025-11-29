@@ -32,7 +32,7 @@ INSERT INTO form (form_name) VALUES
 
 CREATE TABLE item (
     item_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY,
-    item_type ENUM('Battle Item','Catseed','Catfruit','Catseye','Catamin','Material','Material Z','Ticket','Currency','XP','NP','Other') NOT NULL,
+    item_type ENUM('Battle Item','Catseed','Catfruit','Catseye','Behemoth Stone','Behemoth Gem','Catamin','Material','Material Z','Engineer','Ticket','Currency','XP','NP','Other') NOT NULL,
     item_name VARCHAR(50) NOT NULL UNIQUE,
     image_url VARCHAR(255) DEFAULT NULL
 );
@@ -153,7 +153,7 @@ CREATE TABLE auth_token (
     token_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,
     token_hash VARCHAR(64) NOT NULL UNIQUE, 
-    expires_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_used_at TIMESTAMP NULL,
     INDEX idx_user_id (user_id), 

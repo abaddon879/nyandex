@@ -164,6 +164,12 @@ return [
             'destination_table' => 'unitlevel', // Creates temp_unitlevel
             'source_dir_key' => 'unit_data_storage_dir',
             'has_header' => false, // This ensures columns are named col_1, col_2, etc.
+        ],
+        'item_names' => [
+            'source_file' => 'GatyaitemName.csv',
+            'destination_table' => 'item_names', 
+            'source_dir_key' => 'game_data_storage_dir', // <--- Important: Items are in game_data, not unit_data
+            'has_header' => false,
         ],        
     ],
 

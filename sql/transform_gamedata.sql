@@ -117,6 +117,71 @@ ON DUPLICATE KEY UPDATE
 
 
 -- =================================================================================
+-- Step 2.5: Populate the `item` table (Strict Name-Based Logic)
+-- =================================================================================
+
+-- 1. Insert with strict name parsing
+INSERT INTO item (item_id, item_name, item_type, image_url)
+SELECT 
+    (id - 1) AS item_id, 
+    
+    -- [A] Clean Name Logic
+    TRIM(CASE 
+        WHEN col_1 LIKE 'Catseye [%' OR col_1 LIKE 'Catamin [%' THEN 
+            SUBSTRING_INDEX(SUBSTRING_INDEX(col_1, ']', 1), '[', -1)
+        ELSE SUBSTRING_INDEX(col_1, '|', 1)
+    END) AS clean_name,
+
+    -- [B] Strict Type Logic
+    CASE 
+        -- 1. Battle Items (Fixed IDs 0-5 are standard)
+        WHEN (id - 1) BETWEEN 0 AND 5 THEN 'Battle Item'
+        
+        -- 2. Currencies (Match by Name, NOT ID)
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) = 'XP' AND (id - 1) = 6 THEN 'XP' -- Only the primary XP
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) = 'NP' THEN 'NP'
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) = 'Cat Food' THEN 'Currency'
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) = 'Leadership' THEN 'Currency'
+        
+        -- 3. Tickets (Strict Whitelist by Name)
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) IN ('Cat Ticket', 'Rare Ticket', 'Platinum Ticket', 'Legend Ticket') 
+            THEN 'Ticket'
+        
+        -- 4. Evolution: Seeds
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) LIKE '%Seed' THEN 'Catseed'
+        
+        -- 5. Evolution: Fruit
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) LIKE '%Catfruit' THEN 'Catfruit'
+        
+        -- 6. Evolution: Stones
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) LIKE '%B. Stone' THEN 'Behemoth Stone'
+        
+        -- 7. Evolution: Gems
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) LIKE '%B. Gem' THEN 'Behemoth Gem'
+        
+        -- 8. Catseyes / Catamins
+        WHEN col_1 LIKE 'Catseye [%' THEN 'Catseye'
+        WHEN col_1 LIKE 'Catamin [%' THEN 'Catamin'
+        
+        -- 9. Base Materials (Exact List)
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) IN ('Bricks', 'Feathers', 'Coal', 'Sprockets', 'Gold', 'Meteorite', 'Beast Bones', 'Ammonite') 
+            THEN 'Material'
+            
+        -- 10. Base Materials Z (Exact List)
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) IN ('Brick Z', 'Feathers Z', 'Coal Z', 'Sprockets Z', 'Gold Z', 'Meteorite Z', 'Beast Bones Z', 'Ammonite Z') 
+            THEN 'Material Z'
+            
+        -- 11. Engineers
+        WHEN SUBSTRING_INDEX(col_1, '|', 1) = 'Engineers' THEN 'Engineer'
+        
+        ELSE 'Discard'
+    END AS derived_type,
+    
+    CONCAT('gatyaitemD_', (id - 1), '_f.png') AS image_url
+FROM temp_item_names
+HAVING derived_type != 'Discard';
+
+-- =================================================================================
 -- Step 3: Populate the `cat_form_requirement` table
 -- =================================================================================
 INSERT INTO cat_form_requirement (cat_id, form_id, item_id, item_qty)
